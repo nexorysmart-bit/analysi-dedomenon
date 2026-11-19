@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Στούντιο Ανάλυσης Δεδομένων</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout: top bar + scrollable tab rail + one working column; one light visual world to match print-ready charts */
+  --ink: #0f1b33;
+  --ink-soft: #4a5873;
+  --line: #dfe5ef;
+  --surface: #f4f6fa;
+  --paper: #ffffff;
+  --accent: #2563eb;
+  --accent-soft: #e6eefe;
+  --good: #15803d;
+  --good-soft: #e3f4e8;
+  --warn: #b45309;
+  --warn-soft: #fdf1e1;
+  --bad: #b91c1c;
+  --bad-soft: #fde8e8;
+  --font-body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--surface); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.25; }
+h2 { font-size: 18px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--font-mono); font-size: 13px; }
+
+.bar { background: var(--ink); color: #fff; }
+.bar-inner { max-width: 1200px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.brand span { font-family: var(--font-mono); font-size: 12px; color: #9fb3d9; }
+.file-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #c9d5ec; min-width: 0; flex-wrap: wrap; }
+.file-chip b { color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 500; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1d4fd0; }
+.btn-ghost { background: transparent; border-color: #34466b; color: #fff; }
+.btn-ghost:hover { border-color: #9fb3d9; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.tabs { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 9; }
+.tabs-inner { max-width: 1200px; margin: 0 auto; padding: 0 8px; display: flex; overflow-x: auto; scrollbar-width: none; }
+.tabs-inner::-webkit-scrollbar { display: none; }
+.tab { border: 0; background: none; padding: 12px; font-size: 14px; font-weight: 500; color: var(--ink-soft); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .n { font-family: var(--font-mono); font-size: 11px; color: #94a3b8; margin-right: 6px; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 64px; }
+.panel { display: none; gap: 20px; }
+.panel.active { display: grid; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.muted { color: var(--ink-soft); font-size: 13px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.kpi { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .v { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.kpi .v small { font-size: 14px; color: var(--ink-soft); font-weight: 500; }
+.kpi .l { font-size: 13px; color: var(--ink-soft); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { color: var(--good); background: var(--good-soft); }
+.pill.warn { color: var(--warn); background: var(--warn-soft); }
+.pill.bad { color: var(--bad); background: var(--bad-soft); }
+.pill.idle { color: var(--ink-soft); background: var(--surface); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.chip.m { background: var(--accent-soft); border-color: #c7d7fb; }
+
+.table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; max-height: 440px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { background: var(--surface); font-weight: 600; position: sticky; top: 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 12.5px; }
+td.null { color: #a0aec0; font-style: italic; }
+tr:last-child td { border-bottom: 0; }
+table.heat th { position: static; }
+table.heat td { min-width: 58px; font-family: var(--font-mono); font-size: 12px; border: 2px solid var(--paper); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field { display: grid; gap: 4px; min-width: 140px; flex: 1; }
+.field label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+select, input[type="text"] { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); width: 100%; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.check input { width: 17px; height: 17px; accent-color: var(--accent); }
+.editor { width: 100%; min-height: 210px; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; padding: 12px; border-radius: 8px; border: 1px solid #1e2c4a; background: #0f1b33; color: #e2e8f5; resize: vertical; tab-size: 4; }
+.output { margin: 0; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.5; background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: auto; max-height: 460px; white-space: pre; }
+.output.err { background: var(--bad-soft); color: var(--bad); white-space: pre-wrap; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.log { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.log li { padding: 8px 12px; border-left: 3px solid var(--good); background: var(--good-soft); border-radius: 0 6px 6px 0; font-size: 14px; }
+.insights { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.insights li { padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--paper); }
+.error { padding: 10px 14px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); font-size: 14px; }
+.chart { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff; overflow: hidden; }
+.report-frame { width: 100%; height: 720px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 18px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.overlay { position: fixed; inset: 0; background: rgba(15, 27, 51, .45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.overlay.show { display: flex; }
+.loader { background: var(--paper); border-radius: 14px; padding: 18px 22px; display: flex; align-items: center; gap: 12px; }
+.spinner { width: 20px; height: 20px; border: 3px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; }
+.hidden { display: none !important; }
+.lang { font-family: var(--font-mono); font-size: 13px; padding: 8px 12px; letter-spacing: .04em; }
+.start { max-width: 760px; margin: 12px auto 0; width: 100%; gap: 16px; }
+.start h2 { font-size: 22px; }
+.btn-big { padding: 12px 22px; font-size: 16px; }
+.how { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-soft); }
+.how b { color: var(--ink); font-weight: 600; }
+.embedded .dl { display: none !important; }
+@media (max-width: 560px) {
+  .brand span { display: none; }
+  .file-chip b { max-width: 140px; }
+  .kpi .v { font-size: 22px; }
+  .card { padding: 14px; }
+  .report-frame { height: 560px; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <div class="brand"><h1>Στούντιο Ανάλυσης Δεδομένων</h1><span>Python · SQL · Στατιστική</span></div>
+    <div class="file-chip"><span>Αρχείο:</span><b id="fileName">κανένα</b><span id="qualityPill"></span></div>
+    <label class="btn btn-ghost" for="fileInput">Άνοιγμα αρχείου</label>
+    <button class="btn btn-ghost lang" id="langBtn" type="button" aria-label="Language / Γλώσσα">EN</button>
+    <input id="fileInput" type="file" accept=".csv,.txt,.xlsx,.xls" class="hidden">
+  </div>
+</header>
+
+<nav class="tabs hidden" id="tabsNav" aria-label="Ενότητες">
+  <div class="tabs-inner" role="tablist">
+    <button class="tab" role="tab" data-tab="overview" aria-selected="false"><span class="n">01</span>Επισκόπηση</button>
+    <button class="tab" role="tab" data-tab="clean" aria-selected="false"><span class="n">02</span>Καθαρισμός</button>
+    <button class="tab" role="tab" data-tab="sql" aria-selected="false"><span class="n">03</span>Εργαστήριο SQL</button>
+    <button class="tab" role="tab" data-tab="analysis" aria-selected="false"><span class="n">04</span>Ανάλυση</button>
+    <button class="tab" role="tab" data-tab="python" aria-selected="false"><span class="n">05</span>Python</button>
+    <button class="tab" role="tab" data-tab="insights" aria-selected="false"><span class="n">06</span>Συμπεράσματα</button>
+    <button class="tab" role="tab" data-tab="report" aria-selected="false"><span class="n">07</span>Αναφορά</button>
+  </div>
+</nav>
+
+<main>
+  <section class="panel active" id="panel-start">
+    <div class="card start">
+      <h2>Ξεκίνα ανοίγοντας ένα αρχείο δεδομένων</h2>
+      <p style="margin:0">Υποστηρίζονται αρχεία <b>CSV</b> και <b>Excel</b> (.xlsx). Αναγνωρίζονται αυτόματα οι ελληνικές μορφές: διαχωριστικό «;», υποδιαστολή «,» και ημερομηνίες ηη/μμ/εεεε.</p>
+      <div class="row"><label class="btn btn-primary btn-big" for="fileInput">Επιλογή αρχείου</label></div>
+      <div class="drop" id="dropStart">ή σύρε το αρχείο εδώ</div>
+      <ol class="how">
+        <li><b>Επισκόπηση:</b> γραμμές, στήλες, κενά, διπλότυπα και βαθμός ποιότητας.</li>
+        <li><b>Καθαρισμός:</b> διπλότυπα, κενές τιμές και περιττά κενά διαστήματα, με ένα κλικ.</li>
+        <li><b>Εργαστήριο SQL:</b> ερωτήματα SQL πάνω στα δεδομένα σου, σε πραγματική SQLite.</li>
+        <li><b>Ανάλυση:</b> σύνολα ανά κατηγορία, τάσεις στον χρόνο, ακραίες τιμές και συσχετίσεις.</li>
+        <li><b>Python:</b> κώδικας pandas πάνω στα δεδομένα σου.</li>
+        <li><b>Συμπεράσματα & Αναφορά:</b> ευρήματα σε απλά ελληνικά και αναφορά έτοιμη για αποστολή.</li>
+      </ol>
+      <p class="muted" style="margin:0">Τα δεδομένα σου δεν ανεβαίνουν πουθενά. Η επεξεργασία γίνεται μόνο σε αυτή τη συσκευή.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-overview">
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <div class="card-head"><h2>Προεπισκόπηση δεδομένων</h2><span class="muted" id="previewNote"></span></div>
+      <div class="table-wrap" id="previewTable"></div>
+    </div>
+    <div class="card">
+      <h2>Ποιότητα ανά στήλη</h2>
+      <div class="table-wrap" id="qualityTable"></div>
+      <div id="roles" class="grid-2"></div>
+    </div>
+    <div class="drop" id="drop">Σύρε εδώ ένα αρχείο CSV ή Excel, ή πάτα «Άνοιγμα αρχείου». Τα δεδομένα επεξεργάζονται μόνο στη συσκευή σου.</div>
+  </section>
+
+  <section class="panel" id="panel-clean">
+    <div class="card">
+      <h2>Καθαρισμός δεδομένων</h2>
+      <div class="grid-2">
+        <div style="display:grid;gap:10px">
+          <label class="check"><input type="checkbox" id="cDup" checked> Αφαίρεση διπλότυπων γραμμών</label>
+          <label class="check"><input type="checkbox" id="cTrim" checked> Αφαίρεση κενών διαστημάτων από κείμενα</label>
+          <label class="check"><input type="checkbox" id="cEmpty" checked> Αφαίρεση εντελώς κενών στηλών</label>
+        </div>
+        <div style="display:grid;gap:10px">
+          <div class="field"><label for="cNum">Κενές αριθμητικές τιμές</label>
+            <select id="cNum">
+              <option value="median">Συμπλήρωση με διάμεσο</option>
+              <option value="mean">Συμπλήρωση με μέσο όρο</option>
+              <option value="zero">Συμπλήρωση με 0</option>
+              <option value="drop">Διαγραφή της γραμμής</option>
+              <option value="none">Καμία αλλαγή</option>
+            </select></div>
+          <div class="field"><label for="cText">Συμπλήρωση κενών κειμένων με</label><input type="text" id="cText" value="Άγνωστο"></div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" id="btnClean">Εφαρμογή καθαρισμού</button>
+        <button class="btn" id="btnReset">Επαναφορά αρχικών</button>
+        <button class="btn dl" id="btnDlClean">Λήψη δεδομένων (CSV)</button>
+        <button class="btn" id="btnCopyClean">Αντιγραφή δεδομένων (CSV)</button>
+      </div>
+    </div>
+    <div class="card" id="cleanResult">
+      <div class="card-head"><h2>Αποτέλεσμα</h2><span id="cleanScore"></span></div>
+      <ul class="log" id="cleanLog"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-sql">
+    <div class="card">
+      <div class="card-head">
+        <h2>Εργαστήριο SQL</h2>
+        <span id="sqlStatus" class="pill idle">SQLite: φόρτωση…</span>
+      </div>
+      <p class="muted" style="margin:0">Ο πίνακας λέγεται <code>data</code>. Τρέχει πραγματική SQLite στον browser. Επιτρέπονται μόνο ερωτήματα ανάγνωσης (SELECT / WITH).</p>
+      <div class="field"><label for="sqlExamples">Έτοιμα ερωτήματα για αυτό το αρχείο</label><select id="sqlExamples"></select></div>
+      <textarea class="editor" id="sqlText" spellcheck="false" aria-label="Ερώτημα SQL"></textarea>
+      <div class="row">
+        <button class="btn btn-primary" id="btnRun">Εκτέλεση SQL</button>
+        <span class="muted">ή Ctrl + Enter</span>
+      </div>
+      <div id="sqlError"></div>
+    </div>
+    <div class="card hidden" id="sqlResultCard">
+      <div class="card-head"><h2>Αποτέλεσμα</h2>
+        <div class="row"><span class="muted" id="sqlCount"></span><button class="btn dl" id="btnDlSql">Λήψη CSV</button><button class="btn" id="btnCopySql">Αντιγραφή CSV</button></div></div>
+      <div class="table-wrap" id="sqlTable"></div>
+      <div class="chart hidden" id="sqlChart"></div>
+    </div>
+    <div class="card"><h3>Σχήμα πίνακα</h3><div class="table-wrap" id="schemaTable"></div></div>
+  </section>
+
+  <section class="panel" id="panel-analysis">
+    <div class="card">
+      <h2>Ρυθμίσεις ανάλυσης</h2>
+      <div class="controls">
+        <div class="field"><label for="aMeasure">Μέγεθος</label><select id="aMeasure"></select></div>
+        <div class="field" id="fBy"><label for="aBy">Ομαδοποίηση ανά</label><select id="aBy"></select></div>
+        <div class="field" id="fDate"><label for="aDate">Ημερομηνία</label><select id="aDate"></select></div>
+        <div class="field" id="fFreq"><label for="aFreq">Περίοδος</label>
+          <select id="aFreq"><option value="M">Μήνας</option><option value="W">Εβδομάδα</option><option value="Q">Τρίμηνο</option><option value="Y">Έτος</option></select></div>
+      </div>
+    </div>
+    <div id="analysisEmpty" class="card hidden"><p style="margin:0">Δεν βρέθηκαν αριθμητικές στήλες για ανάλυση.</p></div>
+    <div id="analysisBody" style="display:grid;gap:20px">
+      <div class="grid-2">
+        <div class="card" id="groupCard"><div class="chart" id="groupChart"></div><div class="table-wrap" id="groupTable"></div></div>
+        <div class="card" id="trendCard"><div class="chart" id="trendChart"></div><div class="table-wrap" id="trendTable"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Κατανομή & ακραίες τιμές</h2><span id="outPill"></span></div>
+          <div class="field"><label for="aHist">Στήλη</label><select id="aHist"></select></div>
+          <div class="chart" id="histChart"></div>
+          <details><summary class="muted">Προβολή ακραίων τιμών (μέθοδος IQR)</summary><div class="table-wrap" id="outTable" style="margin-top:10px"></div></details>
+        </div>
+        <div class="card" id="corrCard">
+          <h2>Συσχετίσεις</h2>
+          <div class="table-wrap" id="heatTable" style="max-height:none"></div>
+          <div class="controls">
+            <div class="field"><label for="aX">Άξονας X</label><select id="aX"></select></div>
+            <div class="field"><label for="aY">Άξονας Y</label><select id="aY"></select></div>
+          </div>
+          <div class="chart" id="scatterChart"></div>
+        </div>
+      </div>
+      <div class="card"><h2>Περιγραφικά στατιστικά</h2><div class="table-wrap" id="describeTable"></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-python">
+    <div class="card">
+      <div class="card-head"><h2>Python (pandas)</h2><span id="pyStatus" class="pill idle">Python: δεν έχει φορτωθεί</span></div>
+      <p class="muted" style="margin:0">Τα τρέχοντα δεδομένα είναι διαθέσιμα ως pandas DataFrame με όνομα <code>df</code>. Η πρώτη εκτέλεση κατεβάζει την Python (περίπου 15 MB), οπότε προτίμησε Wi-Fi.</p>
+      <div class="field"><label for="pyExamples">Έτοιμα παραδείγματα</label><select id="pyExamples"></select></div>
+      <textarea class="editor" id="pyText" spellcheck="false" aria-label="Κώδικας Python"></textarea>
+      <div class="row"><button class="btn btn-primary" id="btnPy">Εκτέλεση Python</button><span class="muted">ή Ctrl + Enter</span></div>
+      <pre class="output hidden" id="pyOut"></pre>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-insights">
+    <div class="card">
+      <div class="card-head"><h2>Αυτόματα συμπεράσματα</h2><span class="muted">Ενημερώνονται με κάθε αλλαγή στα δεδομένα</span></div>
+      <ul class="insights" id="insightsList"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-report">
+    <div class="card">
+      <h2>Επαγγελματική αναφορά</h2>
+      <div class="controls">
+        <div class="field"><label for="rTitle">Τίτλος</label><input type="text" id="rTitle" value="Ανάλυση δεδομένων"></div>
+        <div class="field"><label for="rAuthor">Συντάκτης</label><input type="text" id="rAuthor" placeholder="Το όνομά σου"></div>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" id="btnReport">Δημιουργία αναφοράς</button>
+        <button class="btn dl hidden" id="btnDlReport">Λήψη αναφοράς (HTML)</button>
+        <button class="btn hidden" id="btnCopyReport">Αντιγραφή HTML</button>
+      </div>
+    </div>
+    <iframe class="report-frame hidden" id="reportFrame" title="Αναφορά"></iframe>
+  </section>
+</main>
+
+<div class="overlay" id="busy"><div class="loader"><div class="spinner"></div><span id="busyText">Επεξεργασία…</span></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Δίγλωσση υποστήριξη / Bilingual support (Ελληνικά · English).
+   The Greek text is the key; English is looked up in the dictionary.
+   Placeholders: {name}. */
+(function (root) {
+  "use strict";
+  const EN = {
+    // ---- page & navigation
+    "Στούντιο Ανάλυσης Δεδομένων": "Data Analysis Studio",
+    "Python · SQL · Στατιστική": "Python · SQL · Statistics",
+    "Αρχείο:": "File:",
+    "κανένα": "none",
+    "Άνοιγμα αρχείου": "Open file",
+    "Επισκόπηση": "Overview",
+    "Καθαρισμός": "Cleaning",
+    "Εργαστήριο SQL": "SQL Lab",
+    "Ανάλυση": "Analysis",
+    "Συμπεράσματα": "Insights",
+    "Αναφορά": "Report",
+    "Ενότητες": "Sections",
+    "Επεξεργασία…": "Processing…",
+    // ---- start screen
+    "Ξεκίνα ανοίγοντας ένα αρχείο δεδομένων": "Start by opening a data file",
+    "Υποστηρίζονται αρχεία": "Supported files:",
+    "και": "and",
+    "(.xlsx). Αναγνωρίζονται αυτόματα οι ελληνικές μορφές: διαχωριστικό «;», υποδιαστολή «,» και ημερομηνίες ηη/μμ/εεεε.":
+      "(.xlsx). International and European formats are detected automatically: “;” separator, decimal comma and dd/mm/yyyy dates.",
+    "Επιλογή αρχείου": "Choose file",
+    "ή σύρε το αρχείο εδώ": "or drop the file here",
+    "Επισκόπηση:": "Overview:",
+    "γραμμές, στήλες, κενά, διπλότυπα και βαθμός ποιότητας.": "rows, columns, missing values, duplicates and a quality score.",
+    "Καθαρισμός:": "Cleaning:",
+    "διπλότυπα, κενές τιμές και περιττά κενά διαστήματα, με ένα κλικ.": "duplicates, missing values and extra spaces, in one click.",
+    "Εργαστήριο SQL:": "SQL Lab:",
+    "ερωτήματα SQL πάνω στα δεδομένα σου, σε πραγματική SQLite.": "SQL queries on your data, running on real SQLite.",
+    "Ανάλυση:": "Analysis:",
+    "σύνολα ανά κατηγορία, τάσεις στον χρόνο, ακραίες τιμές και συσχετίσεις.": "totals by category, trends over time, outliers and correlations.",
+    "κώδικας pandas πάνω στα δεδομένα σου.": "pandas code on your data.",
+    "Συμπεράσματα & Αναφορά:": "Insights & Report:",
+    "ευρήματα σε απλά ελληνικά και αναφορά έτοιμη για αποστολή.": "findings in plain language and a report ready to send.",
+    "Τα δεδομένα σου δεν ανεβαίνουν πουθενά. Η επεξεργασία γίνεται μόνο σε αυτή τη συσκευή.":
+      "Your data is never uploaded. All processing happens on this device only.",
+    // ---- overview
+    "Προεπισκόπηση δεδομένων": "Data preview",
+    "Ποιότητα ανά στήλη": "Quality by column",
+    "Σύρε εδώ ένα αρχείο CSV ή Excel, ή πάτα «Άνοιγμα αρχείου». Τα δεδομένα επεξεργάζονται μόνο στη συσκευή σου.":
+      "Drop a CSV or Excel file here, or tap “Open file”. Data is processed on your device only.",
+    "Γραμμές": "Rows", "Στήλες": "Columns", "Κενά κελιά": "Missing cells", "Διπλότυπες γραμμές": "Duplicate rows",
+    "Ποιότητα δεδομένων": "Data quality",
+    "Εμφανίζονται {a} από {b} γραμμές": "Showing {a} of {b} rows",
+    "Αριθμητικά μεγέθη": "Numeric measures", "Κατηγορίες": "Categories", "Ημερομηνίες": "Dates", "Ελεύθερο κείμενο": "Free text",
+    "καμία": "none",
+    "Ποιότητα {q}/100": "Quality {q}/100",
+    "Δεν υπάρχουν δεδομένα.": "No data.",
+    "κενό": "empty",
+    // ---- cleaning
+    "Καθαρισμός δεδομένων": "Data cleaning",
+    "Αφαίρεση διπλότυπων γραμμών": "Remove duplicate rows",
+    "Αφαίρεση κενών διαστημάτων από κείμενα": "Trim spaces from text",
+    "Αφαίρεση εντελώς κενών στηλών": "Remove completely empty columns",
+    "Κενές αριθμητικές τιμές": "Missing numeric values",
+    "Συμπλήρωση με διάμεσο": "Fill with median",
+    "Συμπλήρωση με μέσο όρο": "Fill with mean",
+    "Συμπλήρωση με 0": "Fill with 0",
+    "Διαγραφή της γραμμής": "Delete the row",
+    "Καμία αλλαγή": "No change",
+    "Συμπλήρωση κενών κειμένων με": "Fill missing text with",
+    "Άγνωστο": "Unknown",
+    "Εφαρμογή καθαρισμού": "Apply cleaning",
+    "Επαναφορά αρχικών": "Restore original",
+    "Λήψη δεδομένων (CSV)": "Download data (CSV)",
+    "Αντιγραφή δεδομένων (CSV)": "Copy data (CSV)",
+    "Αποτέλεσμα": "Result",
+    "Ποιότητα {a} → ": "Quality {a} → ",
+    "Καθαρισμός…": "Cleaning…",
+    "Ο καθαρισμός εφαρμόστηκε": "Cleaning applied",
+    "Επαναφέρθηκαν τα αρχικά δεδομένα": "Original data restored",
+    "Αφαιρέθηκαν {n} εντελώς κενές στήλες: {cols}": "Removed {n} completely empty columns: {cols}",
+    "Αφαιρέθηκαν κενά διαστήματα από τα κείμενα": "Trimmed spaces from text values",
+    "Αφαιρέθηκαν {n} διπλότυπες γραμμές": "Removed {n} duplicate rows",
+    "Αφαιρέθηκαν {n} γραμμές με κενές αριθμητικές τιμές": "Removed {n} rows with missing numeric values",
+    "«{c}»: συμπληρώθηκαν {n} κενά με {how} ({v})": "“{c}”: filled {n} missing values with {how} ({v})",
+    "«{c}»: συμπληρώθηκαν {n} κενά με «{v}»": "“{c}”: filled {n} missing values with “{v}”",
+    "διάμεσο": "the median", "μέσο όρο": "the mean",
+    "Τα δεδομένα ήταν ήδη καθαρά, δεν χρειάστηκαν αλλαγές": "The data was already clean, no changes needed",
+    // ---- SQL
+    "SQLite: φόρτωση…": "SQLite: loading…",
+    "SQLite: έτοιμη": "SQLite: ready",
+    "SQLite: δεν φορτώθηκε": "SQLite: failed to load",
+    "Ο πίνακας λέγεται": "The table is called",
+    ". Τρέχει πραγματική SQLite στον browser. Επιτρέπονται μόνο ερωτήματα ανάγνωσης (SELECT / WITH).":
+      ". Real SQLite runs in your browser. Only read queries are allowed (SELECT / WITH).",
+    "Έτοιμα ερωτήματα για αυτό το αρχείο": "Ready-made queries for this file",
+    "Εκτέλεση SQL": "Run SQL",
+    "ή Ctrl + Enter": "or Ctrl + Enter",
+    "Λήψη CSV": "Download CSV",
+    "Αντιγραφή CSV": "Copy CSV",
+    "Σχήμα πίνακα": "Table schema",
+    "Ερώτημα SQL": "SQL query",
+    "στήλη": "column", "τύπος SQL": "SQL type",
+    "{n} γραμμές": "{n} rows",
+    " (εμφανίζονται οι πρώτες 500)": " (showing the first 500)",
+    "{y} ανά {x}": "{y} by {x}",
+    "Η SQLite άργησε πολύ να ξεκινήσει": "SQLite took too long to start",
+    "Το ερώτημα είναι κενό.": "The query is empty.",
+    "Επιτρέπεται μόνο ένα ερώτημα κάθε φορά.": "Only one query at a time is allowed.",
+    "Επιτρέπονται μόνο ερωτήματα SELECT ή WITH (μόνο ανάγνωση).": "Only SELECT or WITH queries are allowed (read-only).",
+    "Το ερώτημα περιέχει εντολή που αλλάζει δεδομένα, δεν επιτρέπεται.": "The query contains a command that changes data, which is not allowed.",
+    "Πρώτες 10 γραμμές": "First 10 rows",
+    "Πλήθος εγγραφών": "Row count",
+    "Σύνολο {n} ανά {c}": "Total {n} by {c}",
+    "Ποσοστό & κατάταξη ανά {c} (window function)": "Share & rank by {c} (window function)",
+    "Top 3 {c2} σε κάθε {c} (ROW_NUMBER)": "Top 3 {c2} in each {c} (ROW_NUMBER)",
+    "Μηνιαία τάση {n}": "Monthly trend of {n}",
+    "Μηνιαία μεταβολή % {n} (CTE + LAG)": "Month-over-month % change of {n} (CTE + LAG)",
+    "Εγγραφές πάνω από τον μέσο όρο {n} (subquery)": "Rows above the average {n} (subquery)",
+    // ---- analysis
+    "Ρυθμίσεις ανάλυσης": "Analysis settings",
+    "Μέγεθος": "Measure", "Ομαδοποίηση ανά": "Group by", "Ημερομηνία": "Date", "Περίοδος": "Period",
+    "Μήνας": "Month", "Εβδομάδα": "Week", "Τρίμηνο": "Quarter", "Έτος": "Year",
+    "Δεν βρέθηκαν αριθμητικές στήλες για ανάλυση.": "No numeric columns found to analyse.",
+    "Κατανομή & ακραίες τιμές": "Distribution & outliers",
+    "Στήλη": "Column",
+    "Προβολή ακραίων τιμών (μέθοδος IQR)": "Show outliers (IQR method)",
+    "Συσχετίσεις": "Correlations", "Άξονας X": "X axis", "Άξονας Y": "Y axis",
+    "Περιγραφικά στατιστικά": "Descriptive statistics",
+    "εγγραφές": "records", "σύνολο": "total", "μ.ό.": "mean", "ελάχ.": "min", "μέγ.": "max", "μερίδιο %": "share %",
+    "περίοδος": "period", "μεταβολή %": "change %", "κινητός μ.ό.": "rolling avg",
+    "{m} στον χρόνο": "{m} over time",
+    "Κατανομή {h}": "Distribution of {h}",
+    "{n} ακραίες τιμές": "{n} outliers",
+    "Χωρίς ακραίες τιμές": "No outliers",
+    "{y} σε σχέση με {x}": "{y} vs {x}",
+    "Σύνολο": "Total", "Κινητός μ.ό. 3": "3-period rolling avg", "μ.ό. {v}": "mean {v}",
+    "(κενό)": "(empty)",
+    "τύπος": "type", "τιμές": "values", "κενά": "missing", "κενά %": "missing %", "μοναδικές": "unique", "παράδειγμα": "example",
+    "αριθμός": "number", "ημερομηνία": "date", "κείμενο": "text",
+    "πλήθος": "count", "τυπ. απόκλ.": "std", "διάμεσος": "median", "ασυμμετρία": "skew", "ακραίες": "outliers",
+    // ---- python
+    "Python: δεν έχει φορτωθεί": "Python: not loaded",
+    "Python: κατέβασμα…": "Python: downloading…",
+    "Python: φόρτωση pandas…": "Python: loading pandas…",
+    "Python: έτοιμη": "Python: ready",
+    "Python: δεν φορτώθηκε": "Python: failed to load",
+    "Τα τρέχοντα δεδομένα είναι διαθέσιμα ως pandas DataFrame με όνομα": "The current data is available as a pandas DataFrame named",
+    ". Η πρώτη εκτέλεση κατεβάζει την Python (περίπου 15 MB), οπότε προτίμησε Wi-Fi.":
+      ". The first run downloads Python (about 15 MB), so Wi-Fi is recommended.",
+    "Έτοιμα παραδείγματα": "Ready-made examples",
+    "Εκτέλεση Python": "Run Python",
+    "Κώδικας Python": "Python code",
+    "Εκτέλεση…": "Running…",
+    "Φόρτωση Python… (μόνο την πρώτη φορά, 15–60 δευτερόλεπτα)": "Loading Python… (first time only, 15–60 seconds)",
+    "(ο κώδικας εκτελέστηκε χωρίς έξοδο, χρησιμοποίησε print())": "(the code ran with no output, use print())",
+    "Σφάλμα στον κώδικα Python:": "Error in the Python code:",
+    "Η Python άργησε πολύ να ξεκινήσει. Δοκίμασε ξανά με Wi-Fi.": "Python took too long to start. Try again on Wi-Fi.",
+    "Το pandas άργησε πολύ να φορτώσει. Δοκίμασε ξανά με Wi-Fi.": "pandas took too long to load. Try again on Wi-Fi.",
+    "Γρήγορη ματιά στα δεδομένα": "Quick look at the data",
+    "Pivot: {m} ανά {c}": "Pivot: {m} by {c}",
+    "Πίνακας συσχετίσεων": "Correlation matrix",
+    "Ακραίες τιμές (IQR)": "Outliers (IQR)",
+    "Ακραίες τιμές": "Outliers", "από": "of",
+    // ---- insights
+    "Αυτόματα συμπεράσματα": "Automatic insights",
+    "Ενημερώνονται με κάθε αλλαγή στα δεδομένα": "Updated with every change to the data",
+    "Το σύνολο δεδομένων έχει **{r}** γραμμές και **{c}** στήλες.": "The dataset has **{r}** rows and **{c}** columns.",
+    "Ποιότητα δεδομένων: **{q}/100** ({lvl}).": "Data quality: **{q}/100** ({lvl}).",
+    "εξαιρετική": "excellent", "καλή": "good", "μέτρια": "fair", "χαμηλή": "low",
+    "Η στήλη με τα περισσότερα κενά είναι η **{c}** ({p}).": "The column with the most missing values is **{c}** ({p}).",
+    "Βασικό μέγεθος **{m}**: σύνολο {s}, μέσος όρος {a}.": "Main measure **{m}**: total {s}, average {a}.",
+    "Εντοπίστηκαν **{o}** ακραίες τιμές στη στήλη **{m}**, αξίζει να ελεγχθούν.": "Found **{o}** outliers in **{m}**, worth reviewing.",
+    "Στη στήλη **{c}**, το **{k}** συγκεντρώνει το **{p}** του συνόλου {m}.": "In **{c}**, **{k}** accounts for **{p}** of total {m}.",
+    "Κανόνας 80/20: το κορυφαίο 20% των τιμών της **{c}** φέρνει το **{p}** του {m}.": "80/20 rule: the top 20% of **{c}** values bring **{p}** of {m}.",
+    "Καλύτερος μήνας: **{b}** ({bv}). Χειρότερος: **{w}** ({wv}).": "Best month: **{b}** ({bv}). Worst: **{w}** ({wv}).",
+    "Από τον πρώτο στον τελευταίο μήνα: **{dir} {p}**.": "From the first to the last month: **{dir} of {p}**.",
+    "αύξηση": "an increase", "μείωση": "a decrease",
+    "Ισχυρή {kind} συσχέτιση ανάμεσα σε **{a}** και **{b}** (r = {r}).": "Strong {kind} correlation between **{a}** and **{b}** (r = {r}).",
+    "θετική": "positive", "αρνητική": "negative",
+    // ---- report
+    "Επαγγελματική αναφορά": "Professional report",
+    "Τίτλος": "Title", "Συντάκτης": "Author", "Το όνομά σου": "Your name",
+    "Δημιουργία αναφοράς": "Create report",
+    "Λήψη αναφοράς (HTML)": "Download report (HTML)",
+    "Αντιγραφή HTML": "Copy HTML",
+    "Δημιουργία αναφοράς…": "Creating report…",
+    "Ανάλυση δεδομένων": "Data analysis",
+    "Ανάλυση δεδομένων: {f}": "Data analysis: {f}",
+    "Δημιουργήθηκε {d}": "Created {d}",
+    "Πηγή: {s}": "Source: {s}",
+    "Ποιότητα /100": "Quality /100",
+    "Βασικά συμπεράσματα": "Key findings",
+    "Τάση στον χρόνο": "Trend over time",
+    "{m} ανά μήνα": "{m} by month",
+    "Ποιότητα δεδομένων ανά στήλη": "Data quality by column",
+    "Βήματα καθαρισμού": "Cleaning steps",
+    // ---- files & messages
+    "Ανάγνωση {f}…": "Reading {f}…",
+    "Φορτώθηκε: {f} ({n} γραμμές)": "Loaded: {f} ({n} rows)",
+    "Υποστηρίζονται αρχεία .csv, .xlsx και .xls": "Supported files: .csv, .xlsx and .xls",
+    "Το αρχείο δεν περιέχει δεδομένα.": "The file contains no data.",
+    "Σφάλμα: {m}": "Error: {m}",
+    "Λήξη χρόνου κατά τη φόρτωση βιβλιοθήκης": "Timed out while loading a library",
+    "Δεν φορτώθηκε η βιβλιοθήκη {f}": "Could not load the library {f}",
+    "Λήψη: {f}": "Downloaded: {f}",
+    "{what} αντιγράφηκε στο πρόχειρο": "{what} copied to clipboard",
+    "Η αντιγραφή δεν επιτρέπεται σε αυτή την προβολή": "Copying is not allowed in this view",
+    "Το CSV": "The CSV", "Το αποτέλεσμα": "The result", "Η αναφορά": "The report",
+  };
+
+  const KEY = "das-lang";
+  let lang = "el";
+  try { lang = localStorage.getItem(KEY) || ""; } catch (e) { lang = ""; }
+  if (lang !== "el" && lang !== "en") lang = /^el\b/i.test(navigator.language || "") ? "el" : "en";
+
+  const fill = (s, p) => (p ? s.replace(/\{(\w+)\}/g, (m, k) => (k in p ? String(p[k]) : m)) : s);
+  function L(gr, params) {
+    const s = lang === "en" && EN[gr] !== undefined ? EN[gr] : gr;
+    return fill(s, params);
+  }
+
+  // Static page text: remember each node's Greek original, swap on language change.
+  const nodes = [], attrs = [];
+  function collect(rootEl) {
+    const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = walker.nextNode())) {
+      const t = n.nodeValue.trim();
+      if (t && EN[t] !== undefined) nodes.push({ node: n, gr: n.nodeValue });
+    }
+    rootEl.querySelectorAll("[placeholder],[aria-label],[title]").forEach((el) => {
+      ["placeholder", "aria-label", "title"].forEach((a) => {
+        const v = el.getAttribute(a);
+        if (v && EN[v] !== undefined) attrs.push({ el, a, gr: v });
+      });
+    });
+  }
+  function apply() {
+    document.documentElement.lang = lang;
+    nodes.forEach(({ node, gr }) => {
+      const t = gr.trim();
+      node.nodeValue = lang === "en" ? gr.replace(t, EN[t]) : gr;
+    });
+    attrs.forEach(({ el, a, gr }) => el.setAttribute(a, L(gr)));
+    document.title = L("Στούντιο Ανάλυσης Δεδομένων");
+  }
+  function setLang(l) {
+    lang = l === "en" ? "en" : "el";
+    try { localStorage.setItem(KEY, lang); } catch (e) { /* storage unavailable */ }
+    apply();
+  }
+  root.I18N = {
+    L, collect, apply, setLang,
+    get lang() { return lang; },
+    get locale() { return lang === "en" ? "en-US" : "el-GR"; },
+    /** Greek original of a translated string, for values the user may have left at their default. */
+    isDefault(value, gr) { return value === gr || value === EN[gr]; },
+  };
+})(window);
+
+</script>
+<script>
+/* Στούντιο Ανάλυσης Δεδομένων — μηχανή ανάλυσης (browser).
+   Mirrors the Python core: import, type inference, quality, cleaning,
+   statistics, insights, SQL helpers. No external dependencies. */
+(function (root) {
+  "use strict";
+
+  // ------------------------------------------------------------ i18n
+  const L = (s, p) => (root.I18N ? root.I18N.L(s, p) : s.replace(/\{(\w+)\}/g, (m, k) => (p && k in p ? String(p[k]) : m)));
+  const locale = () => (root.I18N ? root.I18N.locale : "el-GR");
+
+  // ------------------------------------------------------------ utilities
+  const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+  const sum = (a) => a.reduce((s, v) => s + v, 0);
+  const mean = (a) => (a.length ? sum(a) / a.length : NaN);
+  const sorted = (a) => [...a].sort((x, y) => x - y);
+  function quantile(sortedArr, q) {
+    if (!sortedArr.length) return NaN;
+    const pos = (sortedArr.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (pos - lo);
+  }
+  function std(a) {
+    if (a.length < 2) return NaN;
+    const m = mean(a);
+    return Math.sqrt(sum(a.map((v) => (v - m) ** 2)) / (a.length - 1));
+  }
+  function skew(a) {
+    const n = a.length;
+    if (n < 3) return NaN;
+    const m = mean(a);
+    const m2 = sum(a.map((v) => (v - m) ** 2)) / n;
+    const m3 = sum(a.map((v) => (v - m) ** 3)) / n;
+    if (m2 === 0) return 0;
+    const g1 = m3 / m2 ** 1.5;
+    return (Math.sqrt(n * (n - 1)) / (n - 2)) * g1;
+  }
+  const round = (v, d = 2) => (isNum(v) ? Math.round(v * 10 ** d) / 10 ** d : v);
+  const fmtNum = (v, d = 2) =>
+    isNum(v) ? v.toLocaleString(locale(), { maximumFractionDigits: d, minimumFractionDigits: 0 }) : String(v);
+  const pct = (v) => `${Math.round(v * 100)}%`;
+
+  // ------------------------------------------------------------ names
+  function cleanName(name) {
+    let n = String(name ?? "").trim().toLowerCase();
+    n = n.replace(/[^\p{L}\p{N}_]+/gu, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+    if (!n) n = "col";
+    if (/^\d/.test(n)) n = "c_" + n;
+    return n;
+  }
+  function uniqueNames(names) {
+    const seen = {};
+    return names.map((raw) => {
+      const b = cleanName(raw);
+      if (b in seen) { seen[b] += 1; return `${b}_${seen[b]}`; }
+      seen[b] = 0; return b;
+    });
+  }
+
+  // ------------------------------------------------------------ CSV
+  function decode(bytes) {
+    for (const enc of ["utf-8", "windows-1253", "iso-8859-7"]) {
+      try {
+        return new TextDecoder(enc, { fatal: true }).decode(bytes).replace(/^﻿/, "");
+      } catch (e) { /* try next */ }
+    }
+    return new TextDecoder("latin1").decode(bytes);
+  }
+  function detectDelimiter(text) {
+    const first = text.split(/\r?\n/, 1)[0] || "";
+    let best = ",", count = -1;
+    for (const d of [",", ";", "\t", "|"]) {
+      const c = first.split(d).length - 1;
+      if (c > count) { best = d; count = c; }
+    }
+    return best;
+  }
+  function parseCSV(text, delim) {
+    const rows = [];
+    let row = [], field = "", i = 0, q = false;
+    const n = text.length;
+    while (i < n) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          q = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+      if (ch === '"' && field === "") { q = true; i++; continue; }
+      if (ch === delim) { row.push(field); field = ""; i++; continue; }
+      if (ch === "\r") { i++; continue; }
+      if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += ch; i++;
+    }
+    if (field !== "" || row.length) { row.push(field); rows.push(row); }
+    return rows.filter((r) => r.some((v) => String(v).trim() !== ""));
+  }
+
+  // ------------------------------------------------------------ typing
+  const DATE_RE = /^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/;
+  function parseNumber(v, decimalComma) {
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (v === null || v === undefined) return null;
+    let s = String(v).trim().replace(/[€$£%\s]/g, "");
+    if (s === "") return null;
+    if (decimalComma) s = s.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
+    if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return null;
+    const x = Number(s);
+    return Number.isFinite(x) ? x : null;
+  }
+  const pad = (x) => String(x).padStart(2, "0");
+  function parseDate(v, dayFirst) {
+    if (v instanceof Date) return isNaN(v) ? null : toISO(v);
+    const m = DATE_RE.exec(String(v ?? "").trim());
+    if (!m) return null;
+    let [, a, b, c, hh, mm, ss] = m;
+    let y, mo, d;
+    if (a.length === 4) { y = +a; mo = +b; d = +c; }
+    else if (dayFirst) { d = +a; mo = +b; y = +c; }
+    else { mo = +a; d = +b; y = +c; }
+    if (y < 100) y += 2000;
+    const dt = new Date(Date.UTC(y, mo - 1, d, +(hh || 0), +(mm || 0), +(ss || 0)));
+    if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return toISO(dt, !!hh);
+  }
+  function toISO(dt, withTime) {
+    const s = `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
+    return withTime ? `${s} ${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}` : s;
+  }
+
+  /** grid: array of arrays (first row = header). Returns a table. */
+  function fromGrid(grid, decimalComma) {
+    if (!grid.length || grid.length < 2) throw new Error(L("Το αρχείο δεν περιέχει δεδομένα."));
+    const width = Math.max(...grid.map((r) => r.length));
+    const header = uniqueNames(Array.from({ length: width }, (_, i) => grid[0][i] ?? `col_${i + 1}`));
+    const body = grid.slice(1).map((r) => Array.from({ length: width }, (_, i) => {
+      const v = r[i];
+      if (v === undefined || v === null) return null;
+      if (typeof v === "string") { const t = v.trim(); return t === "" ? null : t; }
+      return v;
+    }));
+    const types = {};
+    header.forEach((name, j) => {
+      const vals = body.map((r) => r[j]).filter((v) => v !== null);
+      if (!vals.length) { types[name] = "text"; return; }
+      const nums = vals.map((v) => parseNumber(v, decimalComma));
+      if (nums.filter((x) => x !== null).length / vals.length >= 0.95) {
+        types[name] = "number";
+        body.forEach((r) => { r[j] = parseNumber(r[j], decimalComma); });
+        return;
+      }
+      const strs = vals.slice(0, 300).map((v) => (v instanceof Date ? "2000-01-01" : String(v)));
+      if (strs.filter((s) => DATE_RE.test(s)).length / strs.length >= 0.9) {
+        const parts = strs.map((s) => DATE_RE.exec(s)).filter(Boolean);
+        const yearFirst = parts.every((p) => p[1].length === 4);
+        const dayFirst = !yearFirst && !parts.some((p) => +p[2] > 12);
+        const parsed = body.map((r) => (r[j] === null ? null : parseDate(r[j], dayFirst)));
+        const ok = parsed.filter((x) => x !== null).length;
+        if (ok / vals.length >= 0.9) {
+          types[name] = "date";
+          body.forEach((r, i) => { r[j] = parsed[i]; });
+          return;
+        }
+      }
+      types[name] = "text";
+      body.forEach((r) => { if (r[j] !== null && typeof r[j] !== "string") r[j] = String(r[j]); });
+    });
+    return { columns: header, types, rows: body };
+  }
+
+  function loadCSV(bytes) {
+    const text = decode(bytes);
+    const delim = detectDelimiter(text);
+    return fromGrid(parseCSV(text, delim), delim === ";");
+  }
+
+  // ------------------------------------------------------------ columns & roles
+  const colIdx = (t, name) => t.columns.indexOf(name);
+  const col = (t, name) => { const j = colIdx(t, name); return t.rows.map((r) => r[j]); };
+  const numsOf = (t, name) => col(t, name).filter(isNum);
+  function nunique(arr) { return new Set(arr.filter((v) => v !== null)).size; }
+
+  const MONEY = ["revenue", "sales", "amount", "total", "turnover", "income", "profit", "value", "price", "cost",
+                 "τζίρος", "πωλήσεις", "ποσό", "σύνολο", "αξία", "έσοδα"];
+  function idLike(t, name) {
+    if (name === "id" || name.endsWith("_id") || name.startsWith("id_")) return true;
+    const v = col(t, name);
+    if (v.some((x) => x === null || !Number.isInteger(x))) return false;
+    for (let i = 1; i < v.length; i++) if (v[i] <= v[i - 1]) return false;
+    return v.length > 1;
+  }
+  function roles(t) {
+    const numeric = t.columns.filter((c) => t.types[c] === "number");
+    const dates = t.columns.filter((c) => t.types[c] === "date");
+    const limit = Math.max(50, t.rows.length * 0.05);
+    const categorical = t.columns.filter((c) => t.types[c] === "text" && nunique(col(t, c)) <= limit);
+    const text = t.columns.filter((c) => t.types[c] === "text" && !categorical.includes(c));
+    const rank = (c) => {
+      const i = MONEY.findIndex((w) => c.includes(w));
+      return i >= 0 ? [0, i, 0] : [1, 0, -Math.abs(sum(numsOf(t, c)))];
+    };
+    const measures = numeric.filter((c) => !idLike(t, c)).sort((a, b) => {
+      const ra = rank(a), rb = rank(b);
+      return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2];
+    });
+    return { numeric, measures, dates, categorical, text };
+  }
+
+  // ------------------------------------------------------------ quality
+  const rowKey = (r) => JSON.stringify(r);
+  function duplicateCount(t) {
+    const seen = new Set(); let d = 0;
+    for (const r of t.rows) { const k = rowKey(r); if (seen.has(k)) d++; else seen.add(k); }
+    return d;
+  }
+  function missingCount(t) { let m = 0; for (const r of t.rows) for (const v of r) if (v === null) m++; return m; }
+  function qualityScore(t) {
+    const cells = t.rows.length * t.columns.length;
+    if (!cells) return 0;
+    const miss = missingCount(t) / cells;
+    const dup = duplicateCount(t) / t.rows.length;
+    return round(100 * (1 - miss) * (1 - dup), 1);
+  }
+  const TYPE_LABEL = { number: "αριθμός", date: "ημερομηνία", text: "κείμενο" };
+  function qualityReport(t) {
+    return {
+      columns: ["στήλη", "τύπος", "τιμές", "κενά", "κενά %", "μοναδικές", "παράδειγμα"].map((c) => L(c)),
+      rows: t.columns.map((c) => {
+        const v = col(t, c);
+        const nn = v.filter((x) => x !== null);
+        return [c, L(TYPE_LABEL[t.types[c]]), nn.length, v.length - nn.length,
+                round((100 * (v.length - nn.length)) / Math.max(1, v.length), 1), nunique(v),
+                nn.length ? String(nn[0]).slice(0, 40) : ""];
+      }),
+    };
+  }
+
+  // ------------------------------------------------------------ cleaning
+  function clean(src, o) {
+    const log = [];
+    let t = { columns: [...src.columns], types: { ...src.types }, rows: src.rows.map((r) => [...r]) };
+
+    if (o.dropEmpty) {
+      const empty = t.columns.filter((c) => col(t, c).every((v) => v === null));
+      if (empty.length) {
+        const keep = t.columns.map((c, j) => (empty.includes(c) ? -1 : j)).filter((j) => j >= 0);
+        t = { columns: keep.map((j) => t.columns[j]), types: t.types, rows: t.rows.map((r) => keep.map((j) => r[j])) };
+        log.push(L("Αφαιρέθηκαν {n} εντελώς κενές στήλες: {cols}", { n: empty.length, cols: empty.join(", ") }));
+      }
+    }
+    if (o.trim) {
+      t.columns.forEach((c, j) => {
+        if (t.types[c] !== "text") return;
+        t.rows.forEach((r) => { if (typeof r[j] === "string") { const s = r[j].trim(); r[j] = s === "" ? null : s; } });
+      });
+      log.push(L("Αφαιρέθηκαν κενά διαστήματα από τα κείμενα"));
+    }
+    if (o.dropDuplicates) {
+      const seen = new Set(), before = t.rows.length;
+      t.rows = t.rows.filter((r) => { const k = rowKey(r); if (seen.has(k)) return false; seen.add(k); return true; });
+      if (before - t.rows.length) log.push(L("Αφαιρέθηκαν {n} διπλότυπες γραμμές", { n: before - t.rows.length }));
+    }
+    const numCols = t.columns.filter((c) => t.types[c] === "number");
+    if (o.numericFill === "drop") {
+      const idx = numCols.map((c) => colIdx(t, c)), before = t.rows.length;
+      t.rows = t.rows.filter((r) => idx.every((j) => r[j] !== null));
+      log.push(L("Αφαιρέθηκαν {n} γραμμές με κενές αριθμητικές τιμές", { n: before - t.rows.length }));
+    } else if (o.numericFill !== "none") {
+      const label = L({ median: "διάμεσο", mean: "μέσο όρο", zero: "0" }[o.numericFill]);
+      numCols.forEach((c) => {
+        const j = colIdx(t, c);
+        const miss = t.rows.filter((r) => r[j] === null).length;
+        if (!miss) return;
+        const vals = numsOf(t, c);
+        const fill = o.numericFill === "zero" ? 0 : o.numericFill === "mean" ? mean(vals) : quantile(sorted(vals), 0.5);
+        t.rows.forEach((r) => { if (r[j] === null) r[j] = fill; });
+        log.push(L("«{c}»: συμπληρώθηκαν {n} κενά με {how} ({v})", { c, n: miss, how: label, v: fmtNum(fill) }));
+      });
+    }
+    if (o.textFill) {
+      t.columns.forEach((c, j) => {
+        if (t.types[c] !== "text") return;
+        const miss = t.rows.filter((r) => r[j] === null).length;
+        if (!miss) return;
+        t.rows.forEach((r) => { if (r[j] === null) r[j] = o.textFill; });
+        log.push(L("«{c}»: συμπληρώθηκαν {n} κενά με «{v}»", { c, n: miss, v: o.textFill }));
+      });
+    }
+    if (!log.length) log.push(L("Τα δεδομένα ήταν ήδη καθαρά, δεν χρειάστηκαν αλλαγές"));
+    return { table: t, log };
+  }
+
+  // ------------------------------------------------------------ statistics
+  function outliers(values) {
+    const v = values.filter(isNum);
+    if (!v.length) return { lo: NaN, hi: NaN, mask: () => false, count: 0 };
+    const s = sorted(v), q1 = quantile(s, 0.25), q3 = quantile(s, 0.75), iqr = q3 - q1;
+    if (iqr === 0) return { lo: q1, hi: q3, mask: () => false, count: 0 };
+    const lo = q1 - 1.5 * iqr, hi = q3 + 1.5 * iqr;
+    const mask = (x) => isNum(x) && (x < lo || x > hi);
+    return { lo, hi, mask, count: v.filter(mask).length };
+  }
+  function describe(t, measures) {
+    return {
+      columns: ["στήλη", "πλήθος", "μ.ό.", "τυπ. απόκλ.", "ελάχ.", "25%", "διάμεσος", "75%", "μέγ.", "ασυμμετρία", "ακραίες"].map((c) => L(c)),
+      rows: measures.map((c) => {
+        const v = numsOf(t, c), s = sorted(v);
+        return [c, v.length, round(mean(v)), round(std(v)), round(s[0]), round(quantile(s, 0.25)), round(quantile(s, 0.5)),
+                round(quantile(s, 0.75)), round(s[s.length - 1]), round(skew(v)), outliers(v).count];
+      }),
+    };
+  }
+  function pearson(x, y) {
+    const pairs = [];
+    for (let i = 0; i < x.length; i++) if (isNum(x[i]) && isNum(y[i])) pairs.push([x[i], y[i]]);
+    if (pairs.length < 3) return NaN;
+    const mx = mean(pairs.map((p) => p[0])), my = mean(pairs.map((p) => p[1]));
+    let sxy = 0, sxx = 0, syy = 0;
+    for (const [a, b] of pairs) { sxy += (a - mx) * (b - my); sxx += (a - mx) ** 2; syy += (b - my) ** 2; }
+    return sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+  function correlations(t, measures) {
+    const cols = measures.filter((c) => nunique(col(t, c)) > 1);
+    if (cols.length < 2) return null;
+    const data = cols.map((c) => col(t, c));
+    return { columns: cols, matrix: data.map((a) => data.map((b) => round(pearson(a, b), 2))) };
+  }
+  function groupSummary(t, by, measure) {
+    const jb = colIdx(t, by), jm = colIdx(t, measure), g = new Map();
+    for (const r of t.rows) {
+      const k = r[jb] === null ? L("(κενό)") : String(r[jb]);
+      if (!g.has(k)) g.set(k, []);
+      if (isNum(r[jm])) g.get(k).push(r[jm]); else g.get(k).push(null);
+    }
+    let total = 0;
+    const out = [...g.entries()].map(([k, arr]) => {
+      const v = arr.filter(isNum), s = sum(v); total += s;
+      return { key: k, records: arr.length, sum: s, mean: mean(v), min: v.length ? Math.min(...v) : NaN, max: v.length ? Math.max(...v) : NaN };
+    }).sort((a, b) => b.sum - a.sum);
+    out.forEach((o) => { o.share = total ? (100 * o.sum) / total : 0; });
+    return out;
+  }
+  function periodStart(iso, freq) {
+    const d = new Date(iso.slice(0, 10) + "T00:00:00Z");
+    if (freq === "Y") return `${d.getUTCFullYear()}-01-01`;
+    if (freq === "Q") return `${d.getUTCFullYear()}-${pad(Math.floor(d.getUTCMonth() / 3) * 3 + 1)}-01`;
+    if (freq === "W") { const dow = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - dow); return toISO(d); }
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-01`;
+  }
+  function nextPeriod(p, freq) {
+    const d = new Date(p + "T00:00:00Z");
+    if (freq === "Y") d.setUTCFullYear(d.getUTCFullYear() + 1);
+    else if (freq === "Q") d.setUTCMonth(d.getUTCMonth() + 3);
+    else if (freq === "W") d.setUTCDate(d.getUTCDate() + 7);
+    else d.setUTCMonth(d.getUTCMonth() + 1);
+    return toISO(d);
+  }
+  function timeSeries(t, dateCol, measure, freq = "M") {
+    const jd = colIdx(t, dateCol), jm = colIdx(t, measure), m = new Map();
+    for (const r of t.rows) {
+      if (!r[jd]) continue;
+      const p = periodStart(r[jd], freq);
+      m.set(p, (m.get(p) || 0) + (isNum(r[jm]) ? r[jm] : 0));
+    }
+    if (!m.size) return [];
+    const keys = [...m.keys()].sort();
+    const out = [];
+    for (let p = keys[0]; p <= keys[keys.length - 1]; p = nextPeriod(p, freq)) out.push({ period: p, total: m.get(p) || 0 });
+    out.forEach((o, i) => {
+      const prev = i ? out[i - 1].total : null;
+      o.change = prev ? (100 * (o.total - prev)) / Math.abs(prev) : null;
+      const win = out.slice(Math.max(0, i - 2), i + 1).map((x) => x.total);
+      o.rolling = mean(win);
+    });
+    return out;
+  }
+
+  // ------------------------------------------------------------ insights
+  function insights(t) {
+    const r = roles(t), out = [];
+    out.push(L("Το σύνολο δεδομένων έχει **{r}** γραμμές και **{c}** στήλες.", { r: fmtNum(t.rows.length), c: t.columns.length }));
+    const q = qualityScore(t);
+    const lvl = L(q >= 95 ? "εξαιρετική" : q >= 85 ? "καλή" : q >= 70 ? "μέτρια" : "χαμηλή");
+    out.push(L("Ποιότητα δεδομένων: **{q}/100** ({lvl}).", { q: fmtNum(q, 1), lvl }));
+    let worst = null, worstR = 0;
+    for (const c of t.columns) {
+      const v = col(t, c), m = v.filter((x) => x === null).length / Math.max(1, v.length);
+      if (m > worstR) { worstR = m; worst = c; }
+    }
+    if (worst) out.push(L("Η στήλη με τα περισσότερα κενά είναι η **{c}** ({p}).", { c: worst, p: pct(worstR) }));
+    if (r.measures.length) {
+      const m = r.measures[0], v = numsOf(t, m);
+      out.push(L("Βασικό μέγεθος **{m}**: σύνολο {s}, μέσος όρος {a}.", { m, s: fmtNum(sum(v)), a: fmtNum(mean(v)) }));
+      const o = outliers(v).count;
+      if (o) out.push(L("Εντοπίστηκαν **{o}** ακραίες τιμές στη στήλη **{m}**, αξίζει να ελεγχθούν.", { o: fmtNum(o), m }));
+      for (const c of r.categorical.slice(0, 2)) {
+        const g = groupSummary(t, c, m), tot = sum(g.map((x) => x.sum));
+        if (g.length > 1 && tot) {
+          out.push(L("Στη στήλη **{c}**, το **{k}** συγκεντρώνει το **{p}** του συνόλου {m}.", { c, k: g[0].key, p: pct(g[0].sum / tot), m }));
+          if (g.length >= 5) {
+            const k = Math.max(1, Math.ceil(g.length * 0.2));
+            out.push(L("Κανόνας 80/20: το κορυφαίο 20% των τιμών της **{c}** φέρνει το **{p}** του {m}.", { c, p: pct(sum(g.slice(0, k).map((x) => x.sum)) / tot), m }));
+          }
+        }
+      }
+      if (r.dates.length) {
+        const ts = timeSeries(t, r.dates[0], m, "M");
+        if (ts.length >= 2) {
+          const best = ts.reduce((a, b) => (b.total > a.total ? b : a)), worstP = ts.reduce((a, b) => (b.total < a.total ? b : a));
+          const lbl = (p) => `${p.slice(5, 7)}/${p.slice(0, 4)}`;
+          out.push(L("Καλύτερος μήνας: **{b}** ({bv}). Χειρότερος: **{w}** ({wv}).", { b: lbl(best.period), bv: fmtNum(best.total), w: lbl(worstP.period), wv: fmtNum(worstP.total) }));
+          const first = ts[0].total, last = ts[ts.length - 1].total;
+          if (first) {
+            const tr = (last - first) / Math.abs(first);
+            out.push(L("Από τον πρώτο στον τελευταίο μήνα: **{dir} {p}**.", { dir: L(tr > 0 ? "αύξηση" : "μείωση"), p: pct(Math.abs(tr)) }));
+          }
+        }
+      }
+    }
+    const c = correlations(t, r.measures);
+    if (c) {
+      let best = null;
+      for (let i = 0; i < c.columns.length; i++) for (let j = i + 1; j < c.columns.length; j++) {
+        const v = c.matrix[i][j];
+        if (isNum(v) && (!best || Math.abs(v) > Math.abs(best[2]))) best = [c.columns[i], c.columns[j], v];
+      }
+      if (best && Math.abs(best[2]) >= 0.5)
+        out.push(L("Ισχυρή {kind} συσχέτιση ανάμεσα σε **{a}** και **{b}** (r = {r}).", { kind: L(best[2] > 0 ? "θετική" : "αρνητική"), a: best[0], b: best[1], r: best[2].toFixed(2) }));
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------ SQL helpers
+  const FORBIDDEN = /\b(insert|update|delete|drop|alter|create|replace|attach|detach|pragma|vacuum|reindex|truncate)\b/i;
+  function validateSQL(sql) {
+    let s = String(sql).replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
+    if (!s) throw new Error(L("Το ερώτημα είναι κενό."));
+    if (s.includes(";")) throw new Error(L("Επιτρέπεται μόνο ένα ερώτημα κάθε φορά."));
+    if (!/^(select|with)\b/i.test(s)) throw new Error(L("Επιτρέπονται μόνο ερωτήματα SELECT ή WITH (μόνο ανάγνωση)."));
+    if (FORBIDDEN.test(s)) throw new Error(L("Το ερώτημα περιέχει εντολή που αλλάζει δεδομένα, δεν επιτρέπεται."));
+    return s;
+  }
+  function exampleQueries(t, r) {
+    const T = "data", ex = {};
+    ex[L("Πρώτες 10 γραμμές")] = `SELECT *\nFROM ${T}\nLIMIT 10;`;
+    ex[L("Πλήθος εγγραφών")] = `SELECT COUNT(*) AS total_rows\nFROM ${T};`;
+    const cat = r.categorical.filter((c) => nunique(col(t, c)) > 1), num = r.measures, dates = r.dates;
+    if (cat.length && num.length) {
+      const c = cat[0], n = num[0];
+      ex[L("Σύνολο {n} ανά {c}", { n, c })] = `SELECT ${c},\n       COUNT(*) AS records,\n       ROUND(SUM(${n}), 2) AS total_${n},\n       ROUND(AVG(${n}), 2) AS avg_${n}\nFROM ${T}\nGROUP BY ${c}\nORDER BY total_${n} DESC;`;
+      ex[L("Ποσοστό & κατάταξη ανά {c} (window function)", { c })] = `SELECT ${c},\n       ROUND(SUM(${n}), 2) AS total,\n       ROUND(100.0 * SUM(${n}) / SUM(SUM(${n})) OVER (), 2) AS pct_of_total,\n       RANK() OVER (ORDER BY SUM(${n}) DESC) AS rank\nFROM ${T}\nGROUP BY ${c}\nORDER BY rank;`;
+      if (cat.length > 1) {
+        const c2 = cat[1];
+        ex[L("Top 3 {c2} σε κάθε {c} (ROW_NUMBER)", { c2, c })] = `WITH ranked AS (\n    SELECT ${c}, ${c2},\n           SUM(${n}) AS total,\n           ROW_NUMBER() OVER (PARTITION BY ${c} ORDER BY SUM(${n}) DESC) AS rn\n    FROM ${T}\n    GROUP BY ${c}, ${c2}\n)\nSELECT ${c}, ${c2}, ROUND(total, 2) AS total, rn AS position\nFROM ranked\nWHERE rn <= 3\nORDER BY ${c}, rn;`;
+      }
+    }
+    if (dates.length && num.length) {
+      const d = dates[0], n = num[0];
+      ex[L("Μηνιαία τάση {n}", { n })] = `SELECT strftime('%Y-%m', ${d}) AS month,\n       ROUND(SUM(${n}), 2) AS total_${n}\nFROM ${T}\nGROUP BY month\nORDER BY month;`;
+      ex[L("Μηνιαία μεταβολή % {n} (CTE + LAG)", { n })] = `WITH monthly AS (\n    SELECT strftime('%Y-%m', ${d}) AS month,\n           SUM(${n}) AS total\n    FROM ${T}\n    GROUP BY month\n)\nSELECT month,\n       ROUND(total, 2) AS total,\n       ROUND(100.0 * (total - LAG(total) OVER (ORDER BY month))\n             / LAG(total) OVER (ORDER BY month), 2) AS change_pct\nFROM monthly\nORDER BY month;`;
+    }
+    if (num.length) {
+      const n = num[0];
+      ex[L("Εγγραφές πάνω από τον μέσο όρο {n} (subquery)", { n })] = `SELECT *\nFROM ${T}\nWHERE ${n} > (SELECT AVG(${n}) FROM ${T})\nORDER BY ${n} DESC\nLIMIT 20;`;
+    }
+    return ex;
+  }
+
+  // ------------------------------------------------------------ export
+  function toCSV(columns, rows) {
+    const q = (v) => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [columns.map(q).join(","), ...rows.map((r) => r.map(q).join(","))].join("\n");
+  }
+
+  const api = {
+    isNum, round, fmtNum, sum, mean, quantile, sorted, std, skew, pearson,
+    cleanName, uniqueNames, decode, detectDelimiter, parseCSV, parseNumber, parseDate, fromGrid, loadCSV,
+    col, numsOf, nunique, roles, duplicateCount, missingCount, qualityScore, qualityReport, clean,
+    outliers, describe, correlations, groupSummary, timeSeries, insights, validateSQL, exampleQueries, toCSV,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.Engine = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* SVG charts — no external libraries, render instantly on any device. */
+(function (root) {
+  "use strict";
+  const tr = (s, p) => (root.I18N ? root.I18N.L(s, p) : s.replace(/\{(\w+)\}/g, (m, k) => (p && k in p ? String(p[k]) : m)));
+  const C = { accent: "#2563eb", accent2: "#f59e0b", ink: "#0f1b33", soft: "#4a5873", grid: "#e5e9f2", font: "IBM Plex Sans, Segoe UI, Roboto, Arial, sans-serif" };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function nice(v) {
+    const a = Math.abs(v);
+    if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1) + "M";
+    if (a >= 1e3) return (v / 1e3).toFixed(a >= 1e4 ? 0 : 1) + "k";
+    return Math.round(v * 100) / 100 + "";
+  }
+  const full = (v) => v.toLocaleString(root.I18N ? root.I18N.locale : "el-GR", { maximumFractionDigits: 2 });
+  function ticks(min, max, n = 5) {
+    if (min === max) { max = min + 1; }
+    const span = max - min, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || 10 * mag;
+    const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+    const out = []; for (let v = lo; v <= hi + step / 2; v += step) out.push(Math.round(v / step) * step);
+    return out;
+  }
+  const width = () => Math.round(Math.max(340, Math.min(640, api.width || 640)));
+  const svg = (w, h, body, title) =>
+    `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(title)}" xmlns="http://www.w3.org/2000/svg" style="font-family:${C.font};display:block">` +
+    `<text x="0" y="18" font-size="15" font-weight="600" fill="${C.ink}">${esc(title)}</text>${body}</svg>`;
+
+  function bar(items, title, topN = 15) {
+    const data = items.slice(0, topN);
+    if (!data.length) return "";
+    const W = width(), rowH = 26, top = 34, labelW = Math.min(W * 0.34, 14 + 7.2 * Math.max(...data.map((d) => String(d.label).length)));
+    const H = top + data.length * rowH + 26, plotW = W - labelW - 70;
+    const max = Math.max(0, ...data.map((d) => d.value)), min = Math.min(0, ...data.map((d) => d.value));
+    const tk = ticks(min, max, 4), t0 = tk[0], t1 = tk[tk.length - 1];
+    const x = (v) => labelW + ((v - t0) / (t1 - t0)) * plotW;
+    let b = "";
+    tk.forEach((v) => {
+      b += `<line x1="${x(v)}" x2="${x(v)}" y1="${top - 4}" y2="${H - 22}" stroke="${C.grid}"/>`;
+      b += `<text x="${x(v)}" y="${H - 6}" font-size="11" fill="${C.soft}" text-anchor="middle">${nice(v)}</text>`;
+    });
+    data.forEach((d, i) => {
+      const y = top + i * rowH, x0 = x(Math.min(0, d.value)), w = Math.max(1, Math.abs(x(d.value) - x(0)));
+      const maxCh = Math.floor((labelW - 10) / 6.6), lab = String(d.label).length > maxCh ? String(d.label).slice(0, maxCh - 1) + "…" : String(d.label);
+      b += `<text x="${labelW - 8}" y="${y + rowH / 2 + 4}" font-size="12" fill="${C.ink}" text-anchor="end">${esc(lab)}</text>`;
+      b += `<rect x="${x0}" y="${y + 4}" width="${w}" height="${rowH - 8}" rx="3" fill="${i === 0 ? C.accent : "#6b93ee"}"><title>${esc(d.label)}: ${full(d.value)}</title></rect>`;
+      b += `<text x="${x0 + w + 6}" y="${y + rowH / 2 + 4}" font-size="11" fill="${C.soft}">${nice(d.value)}</text>`;
+    });
+    return svg(W, H, b, title);
+  }
+
+  function line(points, title) {
+    if (points.length < 2) return "";
+    const W = width(), H = 280, L = 52, R = 14, T = 40, B = 38, pw = W - L - R, ph = H - T - B;
+    const vals = points.flatMap((p) => [p.value, p.avg].filter((v) => v !== undefined && v !== null));
+    const tk = ticks(Math.min(0, ...vals), Math.max(...vals), 4), t0 = tk[0], t1 = tk[tk.length - 1];
+    const x = (i) => L + (i / (points.length - 1)) * pw, y = (v) => T + ph - ((v - t0) / (t1 - t0)) * ph;
+    let b = "";
+    tk.forEach((v) => {
+      b += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${C.grid}"/>`;
+      b += `<text x="${L - 6}" y="${y(v) + 4}" font-size="11" fill="${C.soft}" text-anchor="end">${nice(v)}</text>`;
+    });
+    const every = Math.ceil(points.length / Math.max(3, Math.floor(W / 80)));
+    points.forEach((p, i) => {
+      if (i % every === 0 || i === points.length - 1)
+        b += `<text x="${x(i)}" y="${H - 14}" font-size="11" fill="${C.soft}" text-anchor="${i === 0 ? "start" : i === points.length - 1 ? "end" : "middle"}">${esc(p.label)}</text>`;
+    });
+    const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join("");
+    b += `<path d="${path}L${x(points.length - 1)},${y(t0)}L${x(0)},${y(t0)}Z" fill="${C.accent}" opacity="0.08"/>`;
+    if (points[0].avg !== undefined) {
+      const ap = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.avg).toFixed(1)}`).join("");
+      b += `<path d="${ap}" fill="none" stroke="${C.accent2}" stroke-width="2" stroke-dasharray="5 4"/>`;
+    }
+    b += `<path d="${path}" fill="none" stroke="${C.accent}" stroke-width="2.2"/>`;
+    points.forEach((p, i) => { b += `<circle cx="${x(i)}" cy="${y(p.value)}" r="${i === points.length - 1 ? 4.5 : 2.6}" fill="${C.accent}"><title>${esc(p.label)}: ${full(p.value)}</title></circle>`; });
+    b += `<g font-size="11" fill="${C.soft}"><rect x="${W - 222}" y="27" width="12" height="3" fill="${C.accent}"/><text x="${W - 206}" y="32">${tr("Σύνολο")}</text>` +
+         `<rect x="${W - 150}" y="27" width="12" height="3" fill="${C.accent2}"/><text x="${W - 134}" y="32">${esc(tr("Κινητός μ.ό. 3"))}</text></g>`;
+    return svg(W, H, b, title);
+  }
+
+  function histogram(values, title, bins = 24) {
+    const v = values.filter((x) => typeof x === "number" && isFinite(x));
+    if (!v.length) return "";
+    let lo = Math.min(...v), hi = Math.max(...v);
+    if (lo === hi) { lo -= 0.5; hi += 0.5; }
+    const w = (hi - lo) / bins, counts = Array(bins).fill(0);
+    v.forEach((x) => { counts[Math.min(bins - 1, Math.floor((x - lo) / w))]++; });
+    const W = width(), H = 260, L = 46, R = 14, T = 40, B = 34, pw = W - L - R, ph = H - T - B;
+    const cmax = Math.max(...counts), tk = ticks(0, cmax, 4), top = tk[tk.length - 1];
+    const y = (c) => T + ph - (c / top) * ph, bw = pw / bins;
+    const xv = (val) => L + ((val - lo) / (hi - lo)) * pw;
+    let b = "";
+    tk.forEach((c) => {
+      b += `<line x1="${L}" x2="${W - R}" y1="${y(c)}" y2="${y(c)}" stroke="${C.grid}"/>`;
+      b += `<text x="${L - 6}" y="${y(c) + 4}" font-size="11" fill="${C.soft}" text-anchor="end">${c}</text>`;
+    });
+    counts.forEach((c, i) => {
+      b += `<rect x="${L + i * bw + 1}" y="${y(c)}" width="${bw - 2}" height="${T + ph - y(c)}" fill="${C.accent}" opacity="0.85"><title>${nice(lo + i * w)} – ${nice(lo + (i + 1) * w)}: ${c}</title></rect>`;
+    });
+    [0, 0.5, 1].forEach((f) => { const val = lo + f * (hi - lo); b += `<text x="${xv(val)}" y="${H - 12}" font-size="11" fill="${C.soft}" text-anchor="${f === 0 ? "start" : f === 1 ? "end" : "middle"}">${nice(val)}</text>`; });
+    const m = v.reduce((a, c) => a + c, 0) / v.length;
+    b += `<line x1="${xv(m)}" x2="${xv(m)}" y1="${T}" y2="${T + ph}" stroke="${C.accent2}" stroke-width="2" stroke-dasharray="5 4"/>`;
+    b += `<text x="${Math.min(W - 120, xv(m) + 6)}" y="${T + 12}" font-size="11" fill="${C.accent2}" font-weight="600">${esc(tr("μ.ό. {v}", { v: nice(m) }))}</text>`;
+    return svg(W, H, b, title);
+  }
+
+  function scatter(xs, ys, xName, yName, title) {
+    const pts = []; for (let i = 0; i < xs.length; i++) if (isFinite(xs[i]) && isFinite(ys[i]) && xs[i] !== null && ys[i] !== null) pts.push([xs[i], ys[i]]);
+    if (pts.length < 2) return "";
+    const sample = pts.length > 1500 ? pts.filter((_, i) => i % Math.ceil(pts.length / 1500) === 0) : pts;
+    const W = width(), H = 300, L = 52, R = 14, T = 40, B = 40, pw = W - L - R, ph = H - T - B;
+    const tx = ticks(Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[0])), 5);
+    const ty = ticks(Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[1])), 4);
+    const x = (v) => L + ((v - tx[0]) / (tx[tx.length - 1] - tx[0])) * pw, y = (v) => T + ph - ((v - ty[0]) / (ty[ty.length - 1] - ty[0])) * ph;
+    let b = "";
+    ty.forEach((v) => { b += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${C.grid}"/><text x="${L - 6}" y="${y(v) + 4}" font-size="11" fill="${C.soft}" text-anchor="end">${nice(v)}</text>`; });
+    tx.forEach((v) => { b += `<text x="${x(v)}" y="${T + ph + 16}" font-size="11" fill="${C.soft}" text-anchor="middle">${nice(v)}</text>`; });
+    sample.forEach(([a, c]) => { b += `<circle cx="${x(a).toFixed(1)}" cy="${y(c).toFixed(1)}" r="2.6" fill="${C.accent}" opacity="0.45"/>`; });
+    const n = pts.length, mx = pts.reduce((s, p) => s + p[0], 0) / n, my = pts.reduce((s, p) => s + p[1], 0) / n;
+    let sxy = 0, sxx = 0; pts.forEach(([a, c]) => { sxy += (a - mx) * (c - my); sxx += (a - mx) ** 2; });
+    if (sxx) {
+      const k = sxy / sxx, b0 = my - k * mx, x0 = tx[0], x1 = tx[tx.length - 1];
+      const clampY = (v) => Math.max(ty[0], Math.min(ty[ty.length - 1], v));
+      b += `<line x1="${x(x0)}" y1="${y(clampY(k * x0 + b0))}" x2="${x(x1)}" y2="${y(clampY(k * x1 + b0))}" stroke="${C.accent2}" stroke-width="2.2"/>`;
+    }
+    b += `<text x="${W - R}" y="${H - 4}" font-size="11" fill="${C.soft}" text-anchor="end">${esc(xName)} →</text>`;
+    b += `<text x="${L}" y="${T - 6}" font-size="11" fill="${C.soft}">↑ ${esc(yName)}</text>`;
+    return svg(W, H, b, title);
+  }
+
+  function heatmapTable(corr) {
+    const color = (v) => {
+      if (v === null || !isFinite(v)) return "#f3f4f6";
+      const a = Math.min(1, Math.abs(v));
+      return v >= 0 ? `rgba(37,99,235,${0.08 + 0.8 * a})` : `rgba(220,38,38,${0.08 + 0.8 * a})`;
+    };
+    const head = `<tr><th></th>${corr.columns.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>`;
+    const body = corr.matrix.map((row, i) => `<tr><th>${esc(corr.columns[i])}</th>${row.map((v) =>
+      `<td style="background:${color(v)};color:${Math.abs(v) > 0.55 ? "#fff" : "#0f1b33"};text-align:center;font-variant-numeric:tabular-nums">${isFinite(v) ? v.toFixed(2) : "–"}</td>`).join("")}</tr>`).join("");
+    return `<table class="heat">${head}${body}</table>`;
+  }
+
+  const api = { bar, line, histogram, scatter, heatmapTable, nice, width: 640 };
+  root.Charts = api;
+})(window);
+
+</script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const E = window.Engine, CH = window.Charts, I = window.I18N, L = I.L;
+const LIBS = {
+  sql: "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js",
+  xlsx: "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+  pyodide: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js",
+};
+const PYODIDE_INDEX = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
+const S = { raw: null, data: null, name: "", log: [], roles: null, db: null, SQL: null, py: null, pyLoaded: null, lastSqlCsv: "", reportHtml: "" };
+const rendered = {};
+
+/* ---------------- helpers ---------------- */
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+const fmt = (v, d = 2) => (typeof v === "number" && isFinite(v) ? v.toLocaleString(I.locale, { maximumFractionDigits: d }) : v);
+function toast(msg, ms = 2600) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), ms); }
+async function busy(text, fn) {
+  $("busyText").textContent = text; $("busy").classList.add("show");
+  await new Promise((r) => setTimeout(r, 20));
+  try { return await fn(); }
+  catch (e) { console.error(e); toast(L("Σφάλμα: {m}", { m: e && e.message ? e.message : e }), 5000); }
+  finally { $("busy").classList.remove("show"); }
+}
+function loadScript(src, timeoutMs = 60000) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    const timer = setTimeout(() => reject(new Error(L("Λήξη χρόνου κατά τη φόρτωση βιβλιοθήκης"))), timeoutMs);
+    s.src = src; s.async = true;
+    s.onload = () => { clearTimeout(timer); resolve(); };
+    s.onerror = () => { clearTimeout(timer); reject(new Error(L("Δεν φορτώθηκε η βιβλιοθήκη {f}", { f: src.split("/").slice(-1)[0] }))); };
+    document.head.appendChild(s);
+  });
+}
+function withTimeout(promise, ms, msg) {
+  return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+}
+function table(el, columns, rows, limit = 300) {
+  if (!columns.length) { el.innerHTML = '<p class="muted" style="padding:10px;margin:0">' + L("Δεν υπάρχουν δεδομένα.") + '</p>'; return; }
+  const head = "<tr>" + columns.map((c) => `<th>${esc(c)}</th>`).join("") + "</tr>";
+  const body = rows.slice(0, limit).map((r) => "<tr>" + r.map((v) =>
+    v === null || v === undefined ? `<td class="null">${L("κενό")}</td>`
+      : typeof v === "number" ? `<td class="num">${fmt(v, 4)}</td>` : `<td>${esc(v)}</td>`).join("") + "</tr>").join("");
+  el.innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+const qualityPill = (q) => `<span class="pill ${q >= 95 ? "good" : q >= 80 ? "warn" : "bad"}">${L("Ποιότητα {q}/100", { q: fmt(q, 1) })}</span>`;
+function fillSelect(el, items, prefer) {
+  const prev = el.value;
+  el.innerHTML = items.map((i) => `<option value="${esc(i)}">${esc(i)}</option>`).join("");
+  if (prefer && items.includes(prefer)) el.value = prefer;
+  else if (items.includes(prev)) el.value = prev;
+}
+/* Downloads work when the app is opened as its own page/file; inside an embedded viewer they are blocked, so hide them there. */
+const EMBEDDED = (() => { try { return window.self !== window.top; } catch { return true; } })();
+if (EMBEDDED) document.documentElement.classList.add("embedded");
+function download(text, filename, type) {
+  const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast(L("Λήψη: {f}", { f: filename }));
+}
+async function copy(text, label) {
+  try { await navigator.clipboard.writeText(text); toast(L("{what} αντιγράφηκε στο πρόχειρο", { what: L(label) })); }
+  catch { toast(L("Η αντιγραφή δεν επιτρέπεται σε αυτή την προβολή")); }
+}
+
+/* ---------------- language ---------------- */
+const STATUS = { sql: ["idle", "SQLite: φόρτωση…"], py: ["idle", "Python: δεν έχει φορτωθεί"] };
+function setStatus(which, cls, gr) {
+  STATUS[which] = [cls, gr];
+  const el = $(which === "sql" ? "sqlStatus" : "pyStatus");
+  el.className = "pill " + cls; el.textContent = L(gr);
+}
+function applyLanguage() {
+  I.apply();
+  $("langBtn").textContent = I.lang === "en" ? "ΕΛ" : "EN";
+  $("langBtn").title = I.lang === "en" ? "Ελληνικά" : "English";
+  if (!S.name) $("fileName").textContent = L("κανένα");
+  setStatus("sql", ...STATUS.sql); setStatus("py", ...STATUS.py);
+  if (I.isDefault($("cText").value, "Άγνωστο")) $("cText").value = L("Άγνωστο");
+  if (I.isDefault($("rTitle").value, "Ανάλυση δεδομένων")) $("rTitle").value = L("Ανάλυση δεδομένων");
+  if (S.data) {
+    S.roles = E.roles(S.data);
+    $("qualityPill").innerHTML = qualityPill(E.qualityScore(S.data));
+    for (const k in rendered) delete rendered[k];
+    render(currentTab());
+  }
+}
+$("langBtn").addEventListener("click", () => { I.setLang(I.lang === "en" ? "el" : "en"); applyLanguage(); });
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => openTab(b.dataset.tab)));
+function openTab(name) {
+  document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
+  if (!rendered[name]) render(name);
+}
+const currentTab = () => (document.querySelector('.tab[aria-selected="true"]') || { dataset: { tab: "overview" } }).dataset.tab;
+function render(name) {
+  rendered[name] = true;
+  CH.width = Math.min(640, document.querySelector("main").clientWidth - 64);
+  ({ overview: renderOverview, clean: renderClean, sql: renderSqlInfo, analysis: renderAnalysis,
+     python: renderPythonInfo, insights: renderInsights, report: () => {} })[name]();
+}
+
+/* ---------------- data state ---------------- */
+function setData(table, { isNew = false, name } = {}) {
+  if (isNew) { S.raw = table; S.log = []; S.name = name; $("fileName").textContent = name; }
+  const first = $("tabsNav").classList.contains("hidden");
+  if (first) {
+    $("tabsNav").classList.remove("hidden");
+    $("panel-start").classList.remove("active");
+    document.querySelector('.tab[data-tab="overview"]').setAttribute("aria-selected", "true");
+    $("panel-overview").classList.add("active");
+  }
+  S.data = table;
+  S.roles = E.roles(table);
+  $("qualityPill").innerHTML = qualityPill(E.qualityScore(table));
+  const r = S.roles;
+  fillSelect($("aMeasure"), r.measures); fillSelect($("aHist"), r.measures);
+  fillSelect($("aX"), r.measures); fillSelect($("aY"), r.measures, $("aY").value && $("aY").value !== $("aX").value ? null : r.measures[1]);
+  fillSelect($("aBy"), r.categorical); fillSelect($("aDate"), r.dates);
+  $("fBy").classList.toggle("hidden", !r.categorical.length);
+  $("fDate").classList.toggle("hidden", !r.dates.length);
+  $("fFreq").classList.toggle("hidden", !r.dates.length);
+  S.db = null; S.pyLoaded = null;
+  for (const k in rendered) delete rendered[k];
+  render(currentTab());
+}
+
+/* ---------------- overview ---------------- */
+function renderOverview() {
+  const t = S.data;
+  const kp = [[fmt(t.rows.length), "Γραμμές"], [t.columns.length, "Στήλες"], [fmt(E.missingCount(t)), "Κενά κελιά"],
+              [fmt(E.duplicateCount(t)), "Διπλότυπες γραμμές"], [`${fmt(E.qualityScore(t), 1)}<small>/100</small>`, "Ποιότητα δεδομένων"]];
+  $("kpis").innerHTML = kp.map(([v, l]) => `<div class="kpi"><span class="v">${v}</span><span class="l">${L(l)}</span></div>`).join("");
+  table($("previewTable"), t.columns, t.rows, 100);
+  $("previewNote").textContent = L("Εμφανίζονται {a} από {b} γραμμές", { a: Math.min(100, t.rows.length), b: fmt(t.rows.length) });
+  const q = E.qualityReport(t); table($("qualityTable"), q.columns, q.rows);
+  const r = S.roles;
+  const g = (title, cols, cls) => `<div><h3 style="margin-bottom:8px">${L(title)}</h3><div class="chips">${cols.length ? cols.map((c) => `<span class="chip ${cls}">${esc(c)}</span>`).join("") : `<span class="muted">${L("καμία")}</span>`}</div></div>`;
+  $("roles").innerHTML = g("Αριθμητικά μεγέθη", r.measures, "m") + g("Κατηγορίες", r.categorical, "") + g("Ημερομηνίες", r.dates, "") + g("Ελεύθερο κείμενο", r.text, "");
+}
+
+/* ---------------- cleaning ---------------- */
+function renderClean() {
+  $("cleanResult").classList.toggle("hidden", !S.log.length);
+  $("cleanLog").innerHTML = S.log.map((l) => `<li>${esc(l)}</li>`).join("");
+  $("cleanScore").innerHTML = `<span class="muted">${L("Ποιότητα {a} → ", { a: fmt(E.qualityScore(S.raw), 1) })}</span>${qualityPill(E.qualityScore(S.data))}`;
+}
+$("btnClean").addEventListener("click", () => busy(L("Καθαρισμός…"), () => {
+  const res = E.clean(S.raw, { dropDuplicates: $("cDup").checked, trim: $("cTrim").checked, dropEmpty: $("cEmpty").checked,
+                              numericFill: $("cNum").value, textFill: $("cText").value.trim() });
+  S.log = res.log; setData(res.table); toast(L("Ο καθαρισμός εφαρμόστηκε"));
+}));
+$("btnReset").addEventListener("click", () => { S.log = []; setData(S.raw); toast(L("Επαναφέρθηκαν τα αρχικά δεδομένα")); });
+$("btnCopyClean").addEventListener("click", () => copy(E.toCSV(S.data.columns, S.data.rows), "Το CSV"));
+
+/* ---------------- SQL ---------------- */
+let sqlReady = null;
+function ensureSQL() {
+  if (!sqlReady) {
+    sqlReady = (async () => {
+      setStatus("sql", "idle", "SQLite: φόρτωση…");
+      await loadScript(LIBS.sql);
+      S.SQL = await withTimeout(window.initSqlJs(), 60000, L("Η SQLite άργησε πολύ να ξεκινήσει"));
+      setStatus("sql", "good", "SQLite: έτοιμη");
+    })().catch((e) => {
+      sqlReady = null;
+      setStatus("sql", "bad", "SQLite: δεν φορτώθηκε");
+      throw e;
+    });
+  }
+  return sqlReady;
+}
+function buildDB() {
+  if (S.db) return S.db;
+  const t = S.data, db = new S.SQL.Database();
+  db.run(`CREATE TABLE data (${t.columns.map((c) => `"${c}" ${t.types[c] === "number" ? "REAL" : "TEXT"}`).join(", ")})`);
+  const st = db.prepare(`INSERT INTO data VALUES (${t.columns.map(() => "?").join(",")})`);
+  db.run("BEGIN");
+  for (const row of t.rows) st.run(row);
+  db.run("COMMIT"); st.free();
+  S.db = db; return db;
+}
+let examples = {};
+function renderSqlInfo() {
+  table($("schemaTable"), [L("στήλη"), L("τύπος SQL")], S.data.columns.map((c) => [c, S.data.types[c] === "number" ? "REAL" : "TEXT"]));
+  examples = E.exampleQueries(S.data, S.roles);
+  const keys = Object.keys(examples), pick = keys[2] || keys[0];
+  fillSelect($("sqlExamples"), keys, pick);
+  $("sqlText").value = examples[pick];
+  runSql();
+}
+async function runSql() {
+  $("sqlError").innerHTML = "";
+  try {
+    const q = E.validateSQL($("sqlText").value);
+    await ensureSQL();
+    const res = buildDB().exec(q);
+    const cols = res[0] ? res[0].columns : [], rows = res[0] ? res[0].values : [];
+    $("sqlResultCard").classList.remove("hidden");
+    table($("sqlTable"), cols, rows, 500);
+    $("sqlCount").textContent = L("{n} γραμμές", { n: fmt(rows.length) }) + (rows.length > 500 ? L(" (εμφανίζονται οι πρώτες 500)") : "");
+    S.lastSqlCsv = E.toCSV(cols, rows);
+    const numIdx = cols.findIndex((c, i) => i > 0 && rows.length && rows.every((r) => typeof r[i] === "number" || r[i] === null));
+    const show = cols.length >= 2 && numIdx > 0 && rows.length > 1 && rows.length <= 40;
+    $("sqlChart").classList.toggle("hidden", !show);
+    if (show) $("sqlChart").innerHTML = CH.bar(rows.map((r) => ({ label: r[0] ?? L("(κενό)"), value: r[numIdx] || 0 })), L("{y} ανά {x}", { y: cols[numIdx], x: cols[0] }), 40);
+  } catch (e) {
+    $("sqlResultCard").classList.add("hidden");
+    $("sqlError").innerHTML = `<div class="error">${esc(e.message || e)}</div>`;
+  }
+}
+$("sqlExamples").addEventListener("change", () => { $("sqlText").value = examples[$("sqlExamples").value]; runSql(); });
+$("btnRun").addEventListener("click", runSql);
+function editorKeys(e, run) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); run(); }
+  if (e.key === "Tab") { e.preventDefault(); const t = e.target, s = t.selectionStart; t.setRangeText("    ", s, t.selectionEnd, "end"); }
+}
+$("sqlText").addEventListener("keydown", (e) => editorKeys(e, runSql));
+$("btnCopySql").addEventListener("click", () => copy(S.lastSqlCsv, "Το αποτέλεσμα"));
+
+/* ---------------- analysis ---------------- */
+function renderAnalysis() {
+  const t = S.data, r = S.roles;
+  $("analysisEmpty").classList.toggle("hidden", !!r.measures.length);
+  $("analysisBody").classList.toggle("hidden", !r.measures.length);
+  if (!r.measures.length) return;
+  const m = $("aMeasure").value || r.measures[0];
+
+  $("groupCard").classList.toggle("hidden", !r.categorical.length);
+  if (r.categorical.length) {
+    const by = $("aBy").value || r.categorical[0], g = E.groupSummary(t, by, m);
+    $("groupChart").innerHTML = CH.bar(g.map((x) => ({ label: x.key, value: x.sum })), L("Σύνολο {n} ανά {c}", { n: m, c: by }));
+    table($("groupTable"), [by, ...["εγγραφές", "σύνολο", "μ.ό.", "ελάχ.", "μέγ.", "μερίδιο %"].map((c) => L(c))],
+      g.map((x) => [x.key, x.records, E.round(x.sum), E.round(x.mean), E.round(x.min), E.round(x.max), E.round(x.share, 1)]));
+  }
+  const ts = r.dates.length ? E.timeSeries(t, $("aDate").value || r.dates[0], m, $("aFreq").value) : [];
+  $("trendCard").classList.toggle("hidden", ts.length < 2);
+  if (ts.length >= 2) {
+    const lbl = (p) => ($("aFreq").value === "Y" ? p.slice(0, 4) : $("aFreq").value === "W" ? p.slice(5) : p.slice(0, 7));
+    $("trendChart").innerHTML = CH.line(ts.map((p) => ({ label: lbl(p.period), value: p.total, avg: p.rolling })), L("{m} στον χρόνο", { m }));
+    table($("trendTable"), ["περίοδος", "σύνολο", "μεταβολή %", "κινητός μ.ό."].map((c) => L(c)),
+      ts.map((p) => [p.period, E.round(p.total), p.change === null ? null : E.round(p.change, 1), E.round(p.rolling)]));
+  }
+  const h = $("aHist").value || m, hv = E.col(t, h), o = E.outliers(hv);
+  $("histChart").innerHTML = CH.histogram(hv, L("Κατανομή {h}", { h }));
+  $("outPill").innerHTML = `<span class="pill ${o.count ? "warn" : "good"}">${o.count ? L("{n} ακραίες τιμές", { n: fmt(o.count) }) : L("Χωρίς ακραίες τιμές")}</span>`;
+  const hj = t.columns.indexOf(h);
+  table($("outTable"), t.columns, t.rows.filter((row) => o.mask(row[hj])), 100);
+
+  const corr = E.correlations(t, r.measures);
+  $("corrCard").classList.toggle("hidden", !corr);
+  if (corr) {
+    $("heatTable").innerHTML = CH.heatmapTable(corr);
+    const x = $("aX").value || r.measures[0], y = $("aY").value || r.measures[1];
+    $("scatterChart").innerHTML = CH.scatter(E.col(t, x), E.col(t, y), x, y, L("{y} σε σχέση με {x}", { y, x }));
+  }
+  const d = E.describe(t, r.measures); table($("describeTable"), d.columns, d.rows);
+}
+["aMeasure", "aBy", "aDate", "aFreq", "aHist", "aX", "aY"].forEach((id) => $(id).addEventListener("change", () => render("analysis")));
+let resizeT, lastW = window.innerWidth;
+window.addEventListener("resize", () => {
+  if (window.innerWidth === lastW) return; // ignore mobile address-bar height changes
+  lastW = window.innerWidth;
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { delete rendered.analysis; if (currentTab() === "analysis") render("analysis"); }, 250);
+});
+
+/* ---------------- Python ---------------- */
+let pyExamples = {};
+function renderPythonInfo() {
+  const r = S.roles, m = r.measures[0], c = r.categorical[0], d = r.dates[0];
+  pyExamples = { [L("Γρήγορη ματιά στα δεδομένα")]: `print(df.shape)\nprint(df.dtypes)\nprint(df.head())` };
+  if (m) pyExamples[L("Περιγραφικά στατιστικά")] = `print(df.describe().round(2).T)`;
+  if (m && c) pyExamples[L("Pivot: {m} ανά {c}", { m, c })] =
+    `summary = (df.groupby("${c}")["${m}"]\n             .agg(["count", "sum", "mean"])\n             .sort_values("sum", ascending=False)\n             .round(2))\nsummary["share_%"] = (100 * summary["sum"] / summary["sum"].sum()).round(1)\nprint(summary)`;
+  if (m && d) pyExamples[L("Μηνιαία τάση {n}", { n: m })] =
+    `df["${d}"] = pd.to_datetime(df["${d}"])\nmonthly = df.set_index("${d}")["${m}"].resample("MS").sum()\nreport = pd.DataFrame({\n    "total": monthly.round(2),\n    "growth_%": (monthly.pct_change() * 100).round(1),\n})\nprint(report)`;
+  if (r.measures.length >= 2) pyExamples[L("Πίνακας συσχετίσεων")] = `print(df[${JSON.stringify(r.measures.slice(0, 6))}].corr().round(2))`;
+  if (m) pyExamples[L("Ακραίες τιμές (IQR)")] =
+    `q1, q3 = df["${m}"].quantile([0.25, 0.75])\niqr = q3 - q1\nmask = (df["${m}"] < q1 - 1.5 * iqr) | (df["${m}"] > q3 + 1.5 * iqr)\nprint(f"${L("Ακραίες τιμές")}: {mask.sum()} ${L("από")} {len(df)}")\nprint(df[mask].sort_values("${m}", ascending=False).head(10))`;
+  const keys = Object.keys(pyExamples), pick = keys[2] || keys[0];
+  fillSelect($("pyExamples"), keys, pick);
+  $("pyText").value = pyExamples[pick];
+}
+$("pyExamples").addEventListener("change", () => { $("pyText").value = pyExamples[$("pyExamples").value]; });
+let pyReady = null;
+function ensurePython() {
+  if (!pyReady) {
+    pyReady = (async () => {
+      const st = $("pyStatus");
+      setStatus("py", "idle", "Python: κατέβασμα…");
+      await loadScript(LIBS.pyodide, 90000);
+      S.py = await withTimeout(window.loadPyodide({ indexURL: PYODIDE_INDEX }), 120000, L("Η Python άργησε πολύ να ξεκινήσει. Δοκίμασε ξανά με Wi-Fi."));
+      setStatus("py", "idle", "Python: φόρτωση pandas…");
+      await withTimeout(S.py.loadPackage(["pandas"]), 120000, L("Το pandas άργησε πολύ να φορτώσει. Δοκίμασε ξανά με Wi-Fi."));
+      setStatus("py", "good", "Python: έτοιμη");
+    })().catch((e) => { pyReady = null; setStatus("py", "bad", "Python: δεν φορτώθηκε"); throw e; });
+  }
+  return pyReady;
+}
+async function runPython() {
+  const out = $("pyOut");
+  out.classList.remove("hidden", "err");
+  out.textContent = S.py ? L("Εκτέλεση…") : L("Φόρτωση Python… (μόνο την πρώτη φορά, 15–60 δευτερόλεπτα)");
+  $("btnPy").disabled = true;
+  try {
+    await ensurePython();
+    const py = S.py;
+    if (S.pyLoaded !== S.data) {
+      py.globals.set("_csv", E.toCSV(S.data.columns, S.data.rows));
+      await py.runPythonAsync("import pandas as pd, io\ndf = pd.read_csv(io.StringIO(_csv))\npd.set_option('display.width', 120)\npd.set_option('display.max_columns', 20)");
+      S.pyLoaded = S.data;
+    }
+    let buf = "";
+    py.setStdout({ batched: (s) => { buf += s + "\n"; } });
+    py.setStderr({ batched: (s) => { buf += s + "\n"; } });
+    const result = await py.runPythonAsync($("pyText").value);
+    if (result !== undefined && result !== null) buf += String(result) + "\n";
+    if (result && result.destroy) result.destroy();
+    out.textContent = buf.trim() || L("(ο κώδικας εκτελέστηκε χωρίς έξοδο, χρησιμοποίησε print())");
+  } catch (e) {
+    out.classList.add("err");
+    const msg = String(e.message || e).trim().split("\n");
+    out.textContent = L("Σφάλμα στον κώδικα Python:") + "\n\n" + msg.slice(-6).join("\n");
+  } finally { $("btnPy").disabled = false; }
+}
+$("btnPy").addEventListener("click", runPython);
+$("pyText").addEventListener("keydown", (e) => editorKeys(e, runPython));
+
+/* ---------------- insights ---------------- */
+function renderInsights() { $("insightsList").innerHTML = E.insights(S.data).map((i) => `<li>${md(i)}</li>`).join(""); }
+
+/* ---------------- report ---------------- */
+function buildReport(title, author) {
+  const t = S.data, r = S.roles, parts = [];
+  const date = new Date().toLocaleDateString(I.locale);
+  parts.push(`<h1>${esc(title)}</h1><p class="meta">${L("Δημιουργήθηκε {d}", { d: date })}${author ? " · " + esc(author) : ""} · ${esc(L("Πηγή: {s}", { s: S.name }))}</p>`);
+  parts.push(`<div class="kpis"><div class="kpi"><b>${fmt(t.rows.length)}</b><span>${L("Γραμμές")}</span></div><div class="kpi"><b>${t.columns.length}</b><span>${L("Στήλες")}</span></div>` +
+             `<div class="kpi"><b>${fmt(E.qualityScore(t), 1)}</b><span>${L("Ποιότητα /100")}</span></div><div class="kpi"><b>${fmt(E.missingCount(t))}</b><span>${L("Κενά κελιά")}</span></div></div>`);
+  parts.push(`<h2>${L("Βασικά συμπεράσματα")}</h2><ul>` + E.insights(t).map((i) => `<li>${md(i)}</li>`).join("") + "</ul>");
+  if (r.measures.length) {
+    const m = r.measures[0];
+    if (r.dates.length) {
+      const ts = E.timeSeries(t, r.dates[0], m, "M");
+      if (ts.length >= 2) parts.push(`<h2>${L("Τάση στον χρόνο")}</h2>` + CH.line(ts.map((p) => ({ label: p.period.slice(0, 7), value: p.total, avg: p.rolling })), L("{m} ανά μήνα", { m })));
+    }
+    r.categorical.slice(0, 2).forEach((c) => {
+      parts.push(`<h2>${esc(L("{y} ανά {x}", { y: m, x: c }))}</h2>` + CH.bar(E.groupSummary(t, c, m).map((x) => ({ label: x.key, value: x.sum })), L("Σύνολο {n} ανά {c}", { n: m, c })));
+    });
+    const corr = E.correlations(t, r.measures);
+    if (corr) parts.push(`<h2>${L("Συσχετίσεις")}</h2>` + CH.heatmapTable(corr));
+    const d = E.describe(t, r.measures);
+    parts.push(`<h2>${L("Περιγραφικά στατιστικά")}</h2>` + htmlTable(d.columns, d.rows));
+  }
+  const q = E.qualityReport(t);
+  parts.push(`<h2>${L("Ποιότητα δεδομένων ανά στήλη")}</h2>` + htmlTable(q.columns, q.rows));
+  if (S.log.length) parts.push(`<h2>${L("Βήματα καθαρισμού")}</h2><ul>` + S.log.map((l) => `<li>${esc(l)}</li>`).join("") + "</ul>");
+  parts.push(`<footer>${L("Στούντιο Ανάλυσης Δεδομένων")} · Python · SQL</footer>`);
+  const css = `body{font-family:"IBM Plex Sans","Segoe UI",Roboto,Arial,sans-serif;color:#0f1b33;max-width:900px;margin:32px auto;padding:0 20px;line-height:1.5}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:32px 0 10px;padding-bottom:6px;border-bottom:2px solid #2563eb}.meta{color:#4a5873;font-size:13px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:22px 0}.kpi{background:#f4f6fa;border-radius:10px;padding:12px 16px}
+.kpi b{display:block;font-size:22px;color:#2563eb}.kpi span{font-size:12px;color:#4a5873}table{border-collapse:collapse;width:100%;font-size:12px;display:block;overflow-x:auto}
+th,td{border-bottom:1px solid #dfe5ef;padding:6px 8px;text-align:left;white-space:nowrap}th{background:#f4f6fa}td.n{text-align:right;font-variant-numeric:tabular-nums}
+table.heat td{text-align:center;min-width:52px;border:2px solid #fff}li{margin:6px 0}svg{max-width:100%;height:auto}footer{margin-top:40px;color:#94a3b8;font-size:12px}`;
+  return `<!DOCTYPE html><html lang="${I.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${css}</style></head><body>${parts.join("")}</body></html>`;
+}
+function htmlTable(cols, rows) {
+  return "<table><tr>" + cols.map((c) => `<th>${esc(c)}</th>`).join("") + "</tr>" +
+    rows.map((r) => "<tr>" + r.map((v) => (typeof v === "number" ? `<td class="n">${fmt(v)}</td>` : `<td>${esc(v ?? "")}</td>`)).join("") + "</tr>").join("") + "</table>";
+}
+$("btnReport").addEventListener("click", () => busy(L("Δημιουργία αναφοράς…"), () => {
+  const w = CH.width; CH.width = 640;
+  try { S.reportHtml = buildReport($("rTitle").value || L("Ανάλυση δεδομένων"), $("rAuthor").value.trim()); } finally { CH.width = w; }
+  $("reportFrame").srcdoc = S.reportHtml;
+  $("reportFrame").classList.remove("hidden"); $("btnCopyReport").classList.remove("hidden"); $("btnDlReport").classList.remove("hidden");
+}));
+$("btnCopyReport").addEventListener("click", () => copy(S.reportHtml, "Η αναφορά"));
+$("btnDlReport").addEventListener("click", () => download(S.reportHtml, "report.html", "text/html"));
+$("btnDlClean").addEventListener("click", () => download("\uFEFF" + E.toCSV(S.data.columns, S.data.rows), "clean_data.csv", "text/csv"));
+$("btnDlSql").addEventListener("click", () => download("\uFEFF" + S.lastSqlCsv, "query_result.csv", "text/csv"));
+
+/* ---------------- files ---------------- */
+async function readTable(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    if (!window.XLSX) await loadScript(LIBS.xlsx);
+    const wb = window.XLSX.read(bytes, { type: "array", cellDates: true });
+    const grid = window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null });
+    return E.fromGrid(grid.map((r) => r.map((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v))), false);
+  }
+  if (name.endsWith(".csv") || name.endsWith(".txt")) return E.loadCSV(bytes);
+  throw new Error(L("Υποστηρίζονται αρχεία .csv, .xlsx και .xls"));
+}
+async function openFile(file) {
+  if (!file) return;
+  await busy(L("Ανάγνωση {f}…", { f: file.name }), async () => {
+    const t = await readTable(file);
+    $("rTitle").value = L("Ανάλυση δεδομένων: {f}", { f: file.name.replace(/\.[^.]+$/, "") });
+    $("sqlResultCard").classList.add("hidden"); $("reportFrame").classList.add("hidden"); $("pyOut").classList.add("hidden");
+    setData(t, { isNew: true, name: file.name });
+    toast(L("Φορτώθηκε: {f} ({n} γραμμές)", { f: file.name, n: fmt(t.rows.length) }));
+  });
+}
+$("fileInput").addEventListener("change", (e) => { openFile(e.target.files[0]); e.target.value = ""; });
+const drops = () => [$("drop"), $("dropStart")];
+document.addEventListener("dragover", (e) => { e.preventDefault(); drops().forEach((d) => d.classList.add("over")); });
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drops().forEach((d) => d.classList.remove("over")); });
+document.addEventListener("drop", (e) => { e.preventDefault(); drops().forEach((d) => d.classList.remove("over")); openFile(e.dataTransfer.files[0]); });
+
+/* ---------------- boot ---------------- */
+(async function boot() {
+  try {
+    I.collect(document.body);
+    applyLanguage();
+  } catch (e) { console.error(e); }
+  ensureSQL().catch((e) => console.warn("SQLite:", e));
+})();
+</script>
+</body>
+</html>
